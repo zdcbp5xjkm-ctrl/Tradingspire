@@ -1,1 +1,240 @@
-ccc
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <!-- iOS PWA Settings -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Jarvis Spire">
+    <meta name="theme-color" content="#000000">
+    <link rel="apple-touch-icon" href="https://img.icons8.com/nolan/512/iron-man.png">
+
+    <title>TRADING SPIRE JARVIS MOBILE</title>
+    <style>
+        * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; touch-action: manipulation; }
+        body { margin: 0; padding: 0; background-color: #000; color: #0ff; font-family: 'Courier New', Courier, monospace; height: 100dvh; width: 100vw; display: flex; flex-direction: row; overflow: hidden; user-select: none; -webkit-user-select: none; }
+        input, textarea { user-select: text; -webkit-user-select: text; }
+        body::after { content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), radial-gradient(circle, rgba(0,0,0,0) 60%, rgba(0,0,0,0.8) 100%); background-size: 100% 3px, 100% 100%; pointer-events: none; z-index: 10; }
+        
+        #chart-section { position: relative; background: #000; flex-basis: 65%; flex-shrink: 0; }
+        .tradingview-widget-container, #tradingview_widget { height: 100% !important; width: 100% !important; }
+        
+        #resizer { width: 10px; background: #000; cursor: col-resize; z-index: 20; display: flex; justify-content: center; align-items: center; flex-shrink: 0; border-left: 1px solid #004444; border-right: 1px solid #004444; }
+        
+        #interface-section { display: flex; flex-direction: column; padding: 10px; background: #020a0a; position: relative; z-index: 11; box-sizing: border-box; flex-grow: 1; }
+
+        @media (max-width: 768px) {
+            body { flex-direction: column; } 
+            #chart-section { flex-basis: 55% !important; height: 55%; width: 100%; }
+            #resizer { height: 8px; width: 100%; cursor: row-resize; border-top: 1px solid #0ff; border-bottom: 1px solid #0ff; }
+            #interface-section { height: 45%; width: 100%; padding-bottom: env(safe-area-inset-bottom, 20px); }
+            #ai-core-container { height: 50px; margin-bottom: 5px; }
+            .arc-reactor { width: 35px; height: 35px; }
+            .arc-inner { width: 12px; height: 12px; }
+        }
+
+        #ai-core-container { display: flex; justify-content: center; align-items: center; height: 100px; border-bottom: 1px solid #003333; margin-bottom: 10px; flex-shrink: 0; }
+        .arc-reactor { width: 50px; height: 50px; border-radius: 50%; border: 3px solid #0ff; box-shadow: 0 0 15px #0ff, inset 0 0 15px #0ff; position: relative; animation: pulse 4s infinite ease-in-out; }
+        .arc-inner { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 20px; height: 20px; background: #fff; border-radius: 50%; box-shadow: 0 0 20px #0ff; }
+        .thinking .arc-reactor { animation: spinPulse 0.3s infinite linear; border-color: #ff3333; box-shadow: 0 0 30px #ff3333; }
+        @keyframes pulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; box-shadow: 0 0 30px #0ff; } }
+        @keyframes spinPulse { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        #chat-window { flex-grow: 1; overflow-y: auto; border: 1px solid #003333; padding: 10px; margin-bottom: 10px; background: rgba(0, 15, 20, 0.95); font-size: 13px; -webkit-overflow-scrolling: touch; }
+        .msg { margin-bottom: 15px; padding: 5px; border-left: 2px solid transparent; }
+        .user { border-left-color: #fff; text-align: right; color: #ccc; }
+        .ai { border-left-color: #0ff; color: #0ff; }
+        .system { color: #ffaa00; font-size: 0.8em; text-align: center; }
+        .error { color: #ff3333; border-left-color: #ff3333; font-weight: bold; }
+
+        .trade-plan { border: 1px solid #fff; background: rgba(255, 255, 255, 0.1); padding: 10px; margin-top: 5px; font-weight: bold; color: #fff; font-size: 12px; }
+        .bullish { border-color: #0f0; color: #0f0; } .bearish { border-color: #f00; color: #f00; } .macro { border-color: #ffaa00; color: #ffaa00; }
+
+        #input-box { display: flex; gap: 5px; flex-shrink: 0; height: 50px; }
+        input { flex-grow: 1; background: #000; border: 1px solid #0ff; color: #fff; padding: 10px; font-family: 'Courier New', monospace; outline: none; font-size: 16px; border-radius: 0; -webkit-appearance: none; }
+        button { background: #004444; color: #0ff; border: 1px solid #0ff; padding: 0 20px; font-weight: bold; border-radius: 0; -webkit-appearance: none; }
+        button:active { background: #0ff; color: #000; }
+
+        #scanner-line { position: absolute; top: 0; left: 0; right: 0; height: 100vh; background: linear-gradient(to bottom, transparent, rgba(0, 255, 255, 0.2), transparent); transform: translateY(-100%); z-index: 100; pointer-events: none; }
+        @keyframes scanDown { 0% { transform: translateY(-100%); } 100% { transform: translateY(100%); } }
+
+        /* --- API KEY MODAL --- */
+        #api-modal {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.95); z-index: 9999;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            padding: 20px;
+        }
+        #api-modal.hidden { display: none; }
+        #api-modal h2 { color: #0ff; text-shadow: 0 0 10px #0ff; margin-bottom: 20px; text-align: center; }
+        #api-key-input { width: 100%; max-width: 400px; margin-bottom: 15px; background: #111; color: #fff; border: 1px solid #0ff; padding: 15px; font-family: monospace; }
+        #save-key-btn { background: #0ff; color: #000; border: none; padding: 15px 30px; font-weight: bold; cursor: pointer; font-size: 16px; }
+        
+        #reset-btn {
+            position: absolute; bottom: 5px; right: 5px; 
+            font-size: 10px; color: #555; background: none; border: none; cursor: pointer; z-index: 100;
+        }
+    </style>
+</head>
+<body>
+    <!-- API KEY MODAL -->
+    <div id="api-modal">
+        <h2>SECURITY CLEARANCE</h2>
+        <p style="color:#aaa; text-align:center; margin-bottom:20px;">ENTER TRADING SPIRE KEY</p>
+        <input type="text" id="api-key-input" placeholder="Paste AIzaSy... here">
+        <button id="save-key-btn" onclick="saveApiKey()">AUTHENTICATE</button>
+    </div>
+
+    <div id="chart-section"><div id="scanner-line"></div><div class="tradingview-widget-container"><div id="tradingview_widget"></div></div></div>
+    <div id="resizer"></div>
+    <div id="interface-section">
+        <div id="ai-core-container"><div class="arc-reactor" id="ai-reactor"><div class="arc-inner"></div></div></div>
+        <div id="chat-window"><div class="msg ai">SYSTEM REBOOT.<br>SECURE STORAGE ACTIVE.<br>READY.</div></div>
+        <div id="input-box"><input type="text" id="user-input" placeholder="Enter command..." onkeydown="if(event.key==='Enter') executeCommand()"><button onclick="executeCommand()">GO</button></div>
+        <button id="reset-btn" onclick="resetKey()">RESET KEY</button>
+    </div>
+    
+    <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+    <script>
+        const MODEL_NAME = "gemini-2.5-flash"; 
+        let API_KEY = ""; // Key is now empty by default
+
+        let currentSymbol = "BINANCE:BTCUSDT", currentInterval = "D", activeStudies = []; 
+        const chatWindow = document.getElementById('chat-window'), aiReactor = document.getElementById('ai-core-container'), scanner = document.getElementById('scanner-line');
+        
+        // --- SECURE KEY MANAGEMENT ---
+        function checkApiKey() {
+            const storedKey = localStorage.getItem("jarvis_api_key");
+            if (storedKey) {
+                API_KEY = storedKey;
+                document.getElementById("api-modal").classList.add("hidden");
+                updateChart();
+            } else {
+                document.getElementById("api-modal").classList.remove("hidden");
+            }
+        }
+
+        function saveApiKey() {
+            const input = document.getElementById("api-key-input").value.trim();
+            if (input.startsWith("AIza")) {
+                localStorage.setItem("jarvis_api_key", input);
+                API_KEY = input;
+                document.getElementById("api-modal").classList.add("hidden");
+                addMessage("KEY SAVED SECURELY.", "system");
+                updateChart();
+            } else {
+                alert("Invalid Key. Must start with 'AIza'");
+            }
+        }
+
+        function resetKey() {
+            if(confirm("Disconnect API Key?")) {
+                localStorage.removeItem("jarvis_api_key");
+                location.reload();
+            }
+        }
+
+        // Initialize
+        checkApiKey();
+
+        async function executeCommand() {
+            const input = document.getElementById('user-input');
+            const text = input.value.trim().toUpperCase();
+            if (!text) return;
+            addMessage(text, 'user');
+            input.value = ''; input.blur(); 
+
+            let newSymbol = parseSymbol(text), newInterval = parseInterval(text), chartNeedsUpdate = false;
+            if (newSymbol && newSymbol !== currentSymbol) { currentSymbol = newSymbol; chartNeedsUpdate = true; }
+            if (newInterval && newInterval !== currentInterval) { currentInterval = newInterval; chartNeedsUpdate = true; }
+            if (text.includes("DIVERGENCE") || text.includes("DIV")) { activeStudies = ["RSI@tv-basicstudies", "MACD@tv-basicstudies"]; addMessage("OPTICS: RSI/MACD ON", 'system'); chartNeedsUpdate = true; }
+            else if (text.includes("CLEAN") || text.includes("RESET")) { activeStudies = []; addMessage("OPTICS: RESET", 'system'); chartNeedsUpdate = true; }
+            if (chartNeedsUpdate) updateChart();
+
+            const isGeneral = isGeneralConversation(text);
+            if (!isGeneral) activateScanner();
+            await getAIAnalysis(text, currentSymbol, currentInterval, isGeneral);
+        }
+
+        function isGeneralConversation(text) {
+            const keywords = ["JOKE", "HELLO", "HI", "ROAST", "MARKET", "NEWS", "ECONOMY", "FED", "CPI", "EARNINGS"];
+            const techWords = ["SCAN", "CHART", "PRICE", "BUY", "SELL", "ANALYSIS", "BTC", "GOLD", "ETH"];
+            return keywords.some(k => text.includes(k)) && !techWords.some(t => text.includes(t));
+        }
+
+        async function fetchLivePrice(tvSymbol) {
+            const map = { "BINANCE:BTCUSDT": "bitcoin", "BINANCE:ETHUSDT": "ethereum", "BINANCE:SOLUSDT": "solana", "BINANCE:XRPUSDT": "ripple", "BINANCE:DOGEUSDT": "dogecoin", "BINANCE:ADAUSDT": "cardano", "OANDA:XAUUSD": "tether-gold", "TVC:SILVER": "kinesis-silver" };
+            const id = map[tvSymbol]; if (!id) return null; 
+            try { const r = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${id}&vs_currencies=usd&include_24hr_change=true`); const d = await r.json(); return d[id] ? { price: d[id].usd, change: d[id].usd_24h_change.toFixed(2) } : null; } catch (e) { return null; }
+        }
+
+        function parseSymbol(text) {
+            if (text.includes("BTC")) return "BINANCE:BTCUSDT"; if (text.includes("ETH")) return "BINANCE:ETHUSDT"; if (text.includes("SOL")) return "BINANCE:SOLUSDT";
+            if (text.includes("GOLD") || text.includes("XAU")) return "OANDA:XAUUSD"; if (text.includes("EUR")) return "FX:EURUSD";
+            if (text.includes("TESLA")) return "NASDAQ:TSLA"; if (text.includes("NVIDIA")) return "NASDAQ:NVDA"; if (text.includes("SPY")) return "AMEX:SPY";
+            if (text.includes(":")) return text; return null; 
+        }
+
+        function parseInterval(text) {
+            if (text.includes("1H") || text.includes("1 HR") || text.includes("60 MIN")) return "60";
+            if (text.includes("4H") || text.includes("4 HR")) return "240"; if (text.includes("15M")) return "15"; if (text.includes("DAY") || text.includes("DAILY")) return "D"; return null;
+        }
+
+        function updateChart() {
+            document.getElementById('tradingview_widget').innerHTML = "";
+            new TradingView.widget({ "autosize": true, "symbol": currentSymbol, "interval": currentInterval, "timezone": "Etc/UTC", "theme": "dark", "style": "1", "locale": "en", "toolbar_bg": "#f1f3f6", "enable_publishing": false, "hide_side_toolbar": true, "allow_symbol_change": true, "container_id": "tradingview_widget", "studies": activeStudies, "details": false });
+        }
+
+        function activateScanner() { scanner.style.animation = 'none'; scanner.offsetHeight; scanner.style.animation = 'scanDown 2s ease-in-out'; }
+
+        async function getAIAnalysis(userText, symbol, interval, isGeneral) {
+            aiReactor.classList.add('thinking');
+            const loadingId = addMessage("PROCESSING...", 'system');
+            let liveDataString = "";
+            
+            if (!isGeneral) { const liveData = await fetchLivePrice(symbol); if (liveData) liveDataString = `LIVE DATA: $${liveData.price} (${liveData.change}%)`; }
+
+            const prompt = `You are TRADING SPIRE JARVIS. User Input: "${userText}". Context: ${symbol}, ${interval}. ${liveDataString}. MODE A (TECH SCAN): Analysis, Signal (BUY/SELL/WAIT), Trade Plan. MODE B (MACRO): Summary, Bull/Bear Case, Recommendation. MODE C (CHAT): Witty.`;
+
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${API_KEY}`, {
+                    method: "POST", headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                });
+                
+                const data = await response.json();
+                if (data.error) throw new Error(data.error.message || "Unknown API Error");
+                if (!data.candidates || !data.candidates[0]) throw new Error("No response from AI.");
+
+                const aiText = data.candidates[0].content.parts[0].text;
+                
+                // SAFE REMOVAL
+                const loadingEl = document.getElementById(loadingId);
+                if (loadingEl) loadingEl.remove();
+
+                aiReactor.classList.remove('thinking');
+                addMessage(aiText, 'ai');
+            } catch (error) {
+                // SAFE REMOVAL
+                const loadingEl = document.getElementById(loadingId);
+                if (loadingEl) loadingEl.remove();
+
+                aiReactor.classList.remove('thinking');
+                addMessage("ERROR: " + error.message, 'error'); 
+            }
+        }
+
+        function addMessage(text, type) {
+            const div = document.createElement('div');
+            div.className = `msg ${type}`;
+            div.innerHTML = text.replace(/\n/g, '<br>');
+            div.id = 'msg-' + Date.now();
+            chatWindow.appendChild(div);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+            return div.id;
+        }
+    </script>
+</body>
+</html>
