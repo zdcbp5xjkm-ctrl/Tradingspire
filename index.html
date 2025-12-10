@@ -11,13 +11,13 @@
     <meta name="theme-color" content="#000000">
     <link rel="apple-touch-icon" href="https://img.icons8.com/nolan/512/iron-man.png">
 
-    <title>TRADING SPIRE JARVIS v8.4 (MOBILE RESIZE)</title>
+    <title>TRADING SPIRE JARVIS v8.5 (TOUCH FIX)</title>
     <style>
         /* --- NATIVE APP FEEL --- */
         * { 
             -webkit-tap-highlight-color: transparent; 
             box-sizing: border-box; 
-            touch-action: none; /* Disables browser handling of gestures to allow custom resizing */
+            /* REMOVED global touch-action: none to allow chart interaction */
         }
         
         body { 
@@ -26,8 +26,8 @@
             background-color: #000; 
             color: #0ff; 
             font-family: 'Courier New', Courier, monospace; 
-            height: 100vh; /* Fallback */
-            height: 100dvh; /* Dynamic viewport for mobile browsers */
+            height: 100vh; 
+            height: 100dvh; 
             width: 100vw; 
             display: flex; 
             flex-direction: row; 
@@ -40,7 +40,6 @@
         input, textarea { 
             user-select: text; 
             -webkit-user-select: text; 
-            touch-action: manipulation; /* Re-enable tap for inputs */
         }
         
         body::after { 
@@ -79,7 +78,7 @@
             flex-shrink: 0; 
             border-left: 1px solid #004444; 
             border-right: 1px solid #004444; 
-            touch-action: none; /* Critical for dragging on mobile */
+            touch-action: none; /* Only block touch here for resizing */
         }
         
         /* --- INTERFACE SECTION --- */
@@ -100,15 +99,14 @@
             body { flex-direction: column; } 
             
             #chart-section { 
-                /* Removed !important to allow JS resizing */
-                flex-basis: 55%; 
-                height: 55%; 
+                flex-basis: 50%; /* UPDATED: 50% Split */
+                height: 50%;     /* UPDATED: 50% Split */
                 width: 100%; 
                 padding-top: env(safe-area-inset-top, 0px); 
             }
             
             #resizer { 
-                height: 20px; /* Much thicker handle for thumb dragging */
+                height: 25px; /* Thicker handle for easier dragging */
                 width: 100%; 
                 cursor: row-resize; 
                 border-top: 1px solid #0ff; 
@@ -151,7 +149,7 @@
             background: rgba(0, 15, 20, 0.95); 
             font-size: 13px; 
             -webkit-overflow-scrolling: touch; 
-            touch-action: pan-y; /* Allow scrolling inside chat */
+            touch-action: pan-y; 
         }
         
         .msg { margin-bottom: 15px; padding: 5px; border-left: 2px solid transparent; }
@@ -160,7 +158,7 @@
         .system { color: #ffaa00; font-size: 0.8em; text-align: center; }
         .error { color: #ff3333; border-left-color: #ff3333; font-weight: bold; }
 
-        /* --- NEW COLOR CLASSES FOR ANALYSIS --- */
+        /* --- COLORS --- */
         .tech-analysis { color: #4deeea; margin-bottom: 8px; text-shadow: 0 0 5px rgba(77, 238, 234, 0.3); } 
         .macro-analysis { color: #ffd700; margin-bottom: 8px; text-shadow: 0 0 5px rgba(255, 215, 0, 0.3); } 
         .final-verdict { color: #ff5df7; font-weight: bold; margin-top: 10px; border-top: 1px solid #333; padding-top: 8px; text-shadow: 0 0 5px rgba(255, 93, 247, 0.3); } 
@@ -264,13 +262,16 @@
 
         function initDrag(e) {
             isResizing = true;
-            // Prevent default to avoid scrolling while resizing
+            // Only prevent default on the RESIZER to stop scrolling
             if(e.type === 'touchstart') e.preventDefault(); 
         }
 
         function doDrag(e) {
             if (!isResizing) return;
             
+            // Prevent scrolling page while resizing
+            if(e.type.startsWith('touch')) e.preventDefault();
+
             let clientX, clientY;
             if (e.type.startsWith('touch')) {
                 clientX = e.touches[0].clientX;
@@ -286,6 +287,7 @@
                 const newHeightPercent = (clientY / window.innerHeight) * 100;
                 if (newHeightPercent > 20 && newHeightPercent < 80) {
                     chartSection.style.flexBasis = `${newHeightPercent}%`;
+                    chartSection.style.height = `${newHeightPercent}%`; // Explicit height for mobile
                 }
             } else {
                 // HORIZONTAL RESIZE (Desktop)
