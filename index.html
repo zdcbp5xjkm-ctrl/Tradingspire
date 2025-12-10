@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -11,30 +11,124 @@
     <meta name="theme-color" content="#000000">
     <link rel="apple-touch-icon" href="https://img.icons8.com/nolan/512/iron-man.png">
 
-    <title>TRADING SPIRE JARVIS MOBILE</title>
+    <title>TRADING SPIRE JARVIS v8.3 (MULTI-COLOR)</title>
     <style>
-        * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; touch-action: manipulation; }
-        body { margin: 0; padding: 0; background-color: #000; color: #0ff; font-family: 'Courier New', Courier, monospace; height: 100dvh; width: 100vw; display: flex; flex-direction: row; overflow: hidden; user-select: none; -webkit-user-select: none; }
-        input, textarea { user-select: text; -webkit-user-select: text; }
-        body::after { content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), radial-gradient(circle, rgba(0,0,0,0) 60%, rgba(0,0,0,0.8) 100%); background-size: 100% 3px, 100% 100%; pointer-events: none; z-index: 10; }
+        /* --- NATIVE APP FEEL --- */
+        * { 
+            -webkit-tap-highlight-color: transparent; 
+            box-sizing: border-box; 
+            touch-action: manipulation; 
+        }
         
-        #chart-section { position: relative; background: #000; flex-basis: 65%; flex-shrink: 0; }
-        .tradingview-widget-container, #tradingview_widget { height: 100% !important; width: 100% !important; }
+        body { 
+            margin: 0; 
+            padding: 0; 
+            background-color: #000; 
+            color: #0ff; 
+            font-family: 'Courier New', Courier, monospace; 
+            height: 100vh; /* Fallback */
+            height: 100dvh; /* Dynamic viewport for mobile browsers */
+            width: 100vw; 
+            display: flex; 
+            flex-direction: row; 
+            overflow: hidden; 
+            user-select: none; 
+            -webkit-user-select: none;
+            overscroll-behavior: none; /* Prevents iOS bounce/rubber-banding */
+        }
         
-        #resizer { width: 10px; background: #000; cursor: col-resize; z-index: 20; display: flex; justify-content: center; align-items: center; flex-shrink: 0; border-left: 1px solid #004444; border-right: 1px solid #004444; }
+        input, textarea { 
+            user-select: text; 
+            -webkit-user-select: text; 
+        }
         
-        #interface-section { display: flex; flex-direction: column; padding: 10px; background: #020a0a; position: relative; z-index: 11; box-sizing: border-box; flex-grow: 1; }
+        body::after { 
+            content: ""; 
+            position: absolute; 
+            top: 0; left: 0; right: 0; bottom: 0; 
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
+                        radial-gradient(circle, rgba(0,0,0,0) 60%, rgba(0,0,0,0.8) 100%); 
+            background-size: 100% 3px, 100% 100%; 
+            pointer-events: none; 
+            z-index: 10; 
+        }
+        
+        /* --- CHART SECTION --- */
+        #chart-section { 
+            position: relative; 
+            background: #000; 
+            flex-basis: 65%; 
+            flex-shrink: 0; 
+        }
+        
+        .tradingview-widget-container, #tradingview_widget { 
+            height: 100% !important; 
+            width: 100% !important; 
+        }
+        
+        /* --- RESIZER --- */
+        #resizer { 
+            width: 10px; 
+            background: #000; 
+            cursor: col-resize; 
+            z-index: 20; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            flex-shrink: 0; 
+            border-left: 1px solid #004444; 
+            border-right: 1px solid #004444; 
+        }
+        
+        /* --- INTERFACE SECTION --- */
+        #interface-section { 
+            display: flex; 
+            flex-direction: column; 
+            padding: 10px; 
+            padding-top: env(safe-area-inset-top, 10px); /* Notch support */
+            background: #020a0a; 
+            position: relative; 
+            z-index: 11; 
+            box-sizing: border-box; 
+            flex-grow: 1; 
+        }
 
+        /* --- MOBILE LAYOUT OVERRIDE --- */
         @media (max-width: 768px) {
             body { flex-direction: column; } 
-            #chart-section { flex-basis: 55% !important; height: 55%; width: 100%; }
-            #resizer { height: 8px; width: 100%; cursor: row-resize; border-top: 1px solid #0ff; border-bottom: 1px solid #0ff; }
-            #interface-section { height: 45%; width: 100%; padding-bottom: env(safe-area-inset-bottom, 20px); }
-            #ai-core-container { height: 50px; margin-bottom: 5px; }
+            
+            #chart-section { 
+                flex-basis: 55% !important; 
+                height: 55%; 
+                width: 100%; 
+                padding-top: env(safe-area-inset-top, 0px); /* Push chart down below notch */
+            }
+            
+            #resizer { 
+                height: 12px; /* Easier to grab with thumb */
+                width: 100%; 
+                cursor: row-resize; 
+                border-top: 1px solid #0ff; 
+                border-bottom: 1px solid #0ff; 
+            }
+            
+            #interface-section { 
+                height: 45%; 
+                width: 100%; 
+                padding-top: 5px;
+                padding-bottom: env(safe-area-inset-bottom, 20px); /* Home bar support */
+            }
+            
+            #ai-core-container { 
+                height: 50px; 
+                margin-bottom: 5px; 
+            }
+            
             .arc-reactor { width: 35px; height: 35px; }
             .arc-inner { width: 12px; height: 12px; }
         }
 
+        /* --- AI VISUALS --- */
         #ai-core-container { display: flex; justify-content: center; align-items: center; height: 100px; border-bottom: 1px solid #003333; margin-bottom: 10px; flex-shrink: 0; }
         .arc-reactor { width: 50px; height: 50px; border-radius: 50%; border: 3px solid #0ff; box-shadow: 0 0 15px #0ff, inset 0 0 15px #0ff; position: relative; animation: pulse 4s infinite ease-in-out; }
         .arc-inner { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 20px; height: 20px; background: #fff; border-radius: 50%; box-shadow: 0 0 20px #0ff; }
@@ -42,22 +136,65 @@
         @keyframes pulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; box-shadow: 0 0 30px #0ff; } }
         @keyframes spinPulse { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        #chat-window { flex-grow: 1; overflow-y: auto; border: 1px solid #003333; padding: 10px; margin-bottom: 10px; background: rgba(0, 15, 20, 0.95); font-size: 13px; -webkit-overflow-scrolling: touch; }
+        /* --- CHAT WINDOW --- */
+        #chat-window { 
+            flex-grow: 1; 
+            overflow-y: auto; 
+            border: 1px solid #003333; 
+            padding: 10px; 
+            margin-bottom: 10px; 
+            background: rgba(0, 15, 20, 0.95); 
+            font-size: 13px; 
+            -webkit-overflow-scrolling: touch; 
+        }
+        
         .msg { margin-bottom: 15px; padding: 5px; border-left: 2px solid transparent; }
         .user { border-left-color: #fff; text-align: right; color: #ccc; }
         .ai { border-left-color: #0ff; color: #0ff; }
         .system { color: #ffaa00; font-size: 0.8em; text-align: center; }
         .error { color: #ff3333; border-left-color: #ff3333; font-weight: bold; }
 
-        .trade-plan { border: 1px solid #fff; background: rgba(255, 255, 255, 0.1); padding: 10px; margin-top: 5px; font-weight: bold; color: #fff; font-size: 12px; }
-        .bullish { border-color: #0f0; color: #0f0; } .bearish { border-color: #f00; color: #f00; } .macro { border-color: #ffaa00; color: #ffaa00; }
+        /* --- NEW COLOR CLASSES FOR ANALYSIS --- */
+        .tech-analysis { color: #4deeea; margin-bottom: 8px; text-shadow: 0 0 5px rgba(77, 238, 234, 0.3); } /* Cyan */
+        .macro-analysis { color: #ffd700; margin-bottom: 8px; text-shadow: 0 0 5px rgba(255, 215, 0, 0.3); } /* Gold */
+        .final-verdict { color: #ff5df7; font-weight: bold; margin-top: 10px; border-top: 1px solid #333; padding-top: 8px; text-shadow: 0 0 5px rgba(255, 93, 247, 0.3); } /* Neon Pink */
 
+        .trade-plan { border: 1px solid #fff; background: rgba(255, 255, 255, 0.1); padding: 10px; margin-top: 5px; font-weight: bold; color: #fff; font-size: 12px; }
+        .bullish { border-color: #0f0; color: #0f0; } 
+        .bearish { border-color: #f00; color: #f00; } 
+        .macro { border-color: #ffaa00; color: #ffaa00; }
+
+        /* --- INPUT AREA --- */
         #input-box { display: flex; gap: 5px; flex-shrink: 0; height: 50px; }
-        input { flex-grow: 1; background: #000; border: 1px solid #0ff; color: #fff; padding: 10px; font-family: 'Courier New', monospace; outline: none; font-size: 16px; border-radius: 0; -webkit-appearance: none; }
-        button { background: #004444; color: #0ff; border: 1px solid #0ff; padding: 0 20px; font-weight: bold; border-radius: 0; -webkit-appearance: none; }
+        input { 
+            flex-grow: 1; 
+            background: #000; 
+            border: 1px solid #0ff; 
+            color: #fff; 
+            padding: 10px; 
+            font-family: 'Courier New', monospace; 
+            outline: none; 
+            font-size: 16px; /* Critical: Prevents auto-zoom on iPhone input focus */
+            border-radius: 0; 
+            -webkit-appearance: none; 
+        }
+        button { 
+            background: #004444; 
+            color: #0ff; 
+            border: 1px solid #0ff; 
+            padding: 0 20px; 
+            font-weight: bold; 
+            border-radius: 0; 
+            -webkit-appearance: none; 
+        }
         button:active { background: #0ff; color: #000; }
 
-        #scanner-line { position: absolute; top: 0; left: 0; right: 0; height: 100vh; background: linear-gradient(to bottom, transparent, rgba(0, 255, 255, 0.2), transparent); transform: translateY(-100%); z-index: 100; pointer-events: none; }
+        /* --- SCANNER EFFECT --- */
+        #scanner-line { 
+            position: absolute; top: 0; left: 0; right: 0; height: 100vh; 
+            background: linear-gradient(to bottom, transparent, rgba(0, 255, 255, 0.2), transparent); 
+            transform: translateY(-100%); z-index: 100; pointer-events: none; 
+        }
         @keyframes scanDown { 0% { transform: translateY(-100%); } 100% { transform: translateY(100%); } }
 
         /* --- API KEY MODAL --- */
@@ -196,7 +333,30 @@
             
             if (!isGeneral) { const liveData = await fetchLivePrice(symbol); if (liveData) liveDataString = `LIVE DATA: $${liveData.price} (${liveData.change}%)`; }
 
-            const prompt = `You are TRADING SPIRE JARVIS. User Input: "${userText}". Context: ${symbol}, ${interval}. ${liveDataString}. MODE A (TECH SCAN): Analysis, Signal (BUY/SELL/WAIT), Trade Plan. MODE B (MACRO): Summary, Bull/Bear Case, Recommendation. MODE C (CHAT): Witty.`;
+            // UPDATED PROMPT FOR MULTI-COLOR HTML OUTPUT
+            const prompt = `You are TRADING SPIRE JARVIS. User Input: "${userText}". Context: ${symbol}, ${interval}. ${liveDataString}.
+            
+            IMPORTANT: Use specific HTML classes for coloring sections:
+            - Wrap Technical Analysis in <div class="tech-analysis">
+            - Wrap Macro/Financial in <div class="macro-analysis">
+            - Wrap Final Recommendation in <div class="final-verdict">
+            
+            MODE A (TECH SCAN / HYBRID): 
+            <div class="tech-analysis">🔭 TECH ANALYSIS: [Explain pattern simply]</div>
+            <div class="macro-analysis">🌍 MACRO CONTEXT: [Explain global factor]</div>
+            <div class="trade-plan [bullish/bearish]">
+               PLAN (Based on price):
+               🚀 ENTRY: ...
+               🎯 TARGET: ...
+               🛑 STOP: ...
+            </div>
+            <div class="final-verdict">🔮 RECOMMENDATION: [BUY/SELL/WAIT] because [reason]</div>
+
+            MODE B (MACRO ONLY): 
+            <div class="macro-analysis">📊 DATA SUMMARY: [Summary]</div>
+            <div class="final-verdict">🔮 VERDICT: [Bullish/Bearish]</div>
+
+            MODE C (CASUAL): Answer naturally.`;
 
             try {
                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${API_KEY}`, {
