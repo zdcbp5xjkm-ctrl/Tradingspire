@@ -11,24 +11,25 @@
     <meta name="theme-color" content="#000000">
     <link rel="apple-touch-icon" href="https://img.icons8.com/nolan/512/iron-man.png">
 
-    <title>TRADING SPIRE JARVIS v8.5 (TOUCH FIX)</title>
+    <title>TRADING SPIRE JARVIS v8.6 (SCROLL FIX)</title>
     <style>
         /* --- NATIVE APP FEEL --- */
         * { 
             -webkit-tap-highlight-color: transparent; 
             box-sizing: border-box; 
-            /* REMOVED global touch-action: none to allow chart interaction */
         }
         
-        body { 
+        html, body {
             margin: 0; 
             padding: 0; 
             background-color: #000; 
             color: #0ff; 
             font-family: 'Courier New', Courier, monospace; 
-            height: 100vh; 
+            /* LOCK VIEWPORT: Prevents page scroll & refresh gestures */
+            position: fixed; 
+            width: 100%;
+            height: 100%;
             height: 100dvh; 
-            width: 100vw; 
             display: flex; 
             flex-direction: row; 
             overflow: hidden; 
@@ -78,7 +79,7 @@
             flex-shrink: 0; 
             border-left: 1px solid #004444; 
             border-right: 1px solid #004444; 
-            touch-action: none; /* Only block touch here for resizing */
+            touch-action: none; 
         }
         
         /* --- INTERFACE SECTION --- */
@@ -92,6 +93,8 @@
             z-index: 11; 
             box-sizing: border-box; 
             flex-grow: 1; 
+            min-height: 0; /* CRITICAL: Allows flex child (chat) to scroll */
+            overflow: hidden;
         }
 
         /* --- MOBILE LAYOUT OVERRIDE --- */
@@ -99,14 +102,14 @@
             body { flex-direction: column; } 
             
             #chart-section { 
-                flex-basis: 50%; /* UPDATED: 50% Split */
-                height: 50%;     /* UPDATED: 50% Split */
+                flex-basis: 50%; 
+                height: 50%; 
                 width: 100%; 
                 padding-top: env(safe-area-inset-top, 0px); 
             }
             
             #resizer { 
-                height: 25px; /* Thicker handle for easier dragging */
+                height: 25px; 
                 width: 100%; 
                 cursor: row-resize; 
                 border-top: 1px solid #0ff; 
@@ -116,7 +119,8 @@
             }
             
             #interface-section { 
-                /* Height will be calculated by flex-grow */
+                /* Force flex to fill remaining space properly */
+                flex: 1;
                 width: 100%; 
                 padding-top: 5px;
                 padding-bottom: env(safe-area-inset-bottom, 20px); 
@@ -150,6 +154,7 @@
             font-size: 13px; 
             -webkit-overflow-scrolling: touch; 
             touch-action: pan-y; 
+            overscroll-behavior: contain; /* Prevents scroll chaining/refresh */
         }
         
         .msg { margin-bottom: 15px; padding: 5px; border-left: 2px solid transparent; }
