@@ -1,4 +1,4 @@
-
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -11,13 +11,13 @@
     <meta name="theme-color" content="#000000">
     <link rel="apple-touch-icon" href="https://img.icons8.com/nolan/512/iron-man.png">
 
-    <title>TRADING SPIRE JARVIS v8.3 (MULTI-COLOR)</title>
+    <title>TRADING SPIRE JARVIS v8.4 (MOBILE RESIZE)</title>
     <style>
         /* --- NATIVE APP FEEL --- */
         * { 
             -webkit-tap-highlight-color: transparent; 
             box-sizing: border-box; 
-            touch-action: manipulation; 
+            touch-action: none; /* Disables browser handling of gestures to allow custom resizing */
         }
         
         body { 
@@ -34,12 +34,13 @@
             overflow: hidden; 
             user-select: none; 
             -webkit-user-select: none;
-            overscroll-behavior: none; /* Prevents iOS bounce/rubber-banding */
+            overscroll-behavior: none; 
         }
         
         input, textarea { 
             user-select: text; 
             -webkit-user-select: text; 
+            touch-action: manipulation; /* Re-enable tap for inputs */
         }
         
         body::after { 
@@ -68,7 +69,7 @@
         
         /* --- RESIZER --- */
         #resizer { 
-            width: 10px; 
+            width: 15px; 
             background: #000; 
             cursor: col-resize; 
             z-index: 20; 
@@ -78,6 +79,7 @@
             flex-shrink: 0; 
             border-left: 1px solid #004444; 
             border-right: 1px solid #004444; 
+            touch-action: none; /* Critical for dragging on mobile */
         }
         
         /* --- INTERFACE SECTION --- */
@@ -85,7 +87,7 @@
             display: flex; 
             flex-direction: column; 
             padding: 10px; 
-            padding-top: env(safe-area-inset-top, 10px); /* Notch support */
+            padding-top: env(safe-area-inset-top, 10px); 
             background: #020a0a; 
             position: relative; 
             z-index: 11; 
@@ -98,25 +100,28 @@
             body { flex-direction: column; } 
             
             #chart-section { 
-                flex-basis: 55% !important; 
+                /* Removed !important to allow JS resizing */
+                flex-basis: 55%; 
                 height: 55%; 
                 width: 100%; 
-                padding-top: env(safe-area-inset-top, 0px); /* Push chart down below notch */
+                padding-top: env(safe-area-inset-top, 0px); 
             }
             
             #resizer { 
-                height: 12px; /* Easier to grab with thumb */
+                height: 20px; /* Much thicker handle for thumb dragging */
                 width: 100%; 
                 cursor: row-resize; 
                 border-top: 1px solid #0ff; 
                 border-bottom: 1px solid #0ff; 
+                border-left: none;
+                border-right: none;
             }
             
             #interface-section { 
-                height: 45%; 
+                /* Height will be calculated by flex-grow */
                 width: 100%; 
                 padding-top: 5px;
-                padding-bottom: env(safe-area-inset-bottom, 20px); /* Home bar support */
+                padding-bottom: env(safe-area-inset-bottom, 20px); 
             }
             
             #ai-core-container { 
@@ -146,6 +151,7 @@
             background: rgba(0, 15, 20, 0.95); 
             font-size: 13px; 
             -webkit-overflow-scrolling: touch; 
+            touch-action: pan-y; /* Allow scrolling inside chat */
         }
         
         .msg { margin-bottom: 15px; padding: 5px; border-left: 2px solid transparent; }
@@ -155,9 +161,9 @@
         .error { color: #ff3333; border-left-color: #ff3333; font-weight: bold; }
 
         /* --- NEW COLOR CLASSES FOR ANALYSIS --- */
-        .tech-analysis { color: #4deeea; margin-bottom: 8px; text-shadow: 0 0 5px rgba(77, 238, 234, 0.3); } /* Cyan */
-        .macro-analysis { color: #ffd700; margin-bottom: 8px; text-shadow: 0 0 5px rgba(255, 215, 0, 0.3); } /* Gold */
-        .final-verdict { color: #ff5df7; font-weight: bold; margin-top: 10px; border-top: 1px solid #333; padding-top: 8px; text-shadow: 0 0 5px rgba(255, 93, 247, 0.3); } /* Neon Pink */
+        .tech-analysis { color: #4deeea; margin-bottom: 8px; text-shadow: 0 0 5px rgba(77, 238, 234, 0.3); } 
+        .macro-analysis { color: #ffd700; margin-bottom: 8px; text-shadow: 0 0 5px rgba(255, 215, 0, 0.3); } 
+        .final-verdict { color: #ff5df7; font-weight: bold; margin-top: 10px; border-top: 1px solid #333; padding-top: 8px; text-shadow: 0 0 5px rgba(255, 93, 247, 0.3); } 
 
         .trade-plan { border: 1px solid #fff; background: rgba(255, 255, 255, 0.1); padding: 10px; margin-top: 5px; font-weight: bold; color: #fff; font-size: 12px; }
         .bullish { border-color: #0f0; color: #0f0; } 
@@ -174,7 +180,7 @@
             padding: 10px; 
             font-family: 'Courier New', monospace; 
             outline: none; 
-            font-size: 16px; /* Critical: Prevents auto-zoom on iPhone input focus */
+            font-size: 16px; 
             border-radius: 0; 
             -webkit-appearance: none; 
         }
@@ -241,6 +247,62 @@
         let currentSymbol = "BINANCE:BTCUSDT", currentInterval = "D", activeStudies = []; 
         const chatWindow = document.getElementById('chat-window'), aiReactor = document.getElementById('ai-core-container'), scanner = document.getElementById('scanner-line');
         
+        // --- RESIZABLE LOGIC (MOBILE & DESKTOP) ---
+        const resizer = document.getElementById('resizer');
+        const chartSection = document.getElementById('chart-section');
+        let isResizing = false;
+
+        // Mouse Events
+        resizer.addEventListener('mousedown', initDrag);
+        document.addEventListener('mousemove', doDrag);
+        document.addEventListener('mouseup', stopDrag);
+
+        // Touch Events
+        resizer.addEventListener('touchstart', initDrag, {passive: false});
+        document.addEventListener('touchmove', doDrag, {passive: false});
+        document.addEventListener('touchend', stopDrag);
+
+        function initDrag(e) {
+            isResizing = true;
+            // Prevent default to avoid scrolling while resizing
+            if(e.type === 'touchstart') e.preventDefault(); 
+        }
+
+        function doDrag(e) {
+            if (!isResizing) return;
+            
+            let clientX, clientY;
+            if (e.type.startsWith('touch')) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
+
+            // Check if Mobile Mode (Column layout) or Desktop (Row layout)
+            if (window.innerWidth <= 768) {
+                // VERTICAL RESIZE (Mobile)
+                const newHeightPercent = (clientY / window.innerHeight) * 100;
+                if (newHeightPercent > 20 && newHeightPercent < 80) {
+                    chartSection.style.flexBasis = `${newHeightPercent}%`;
+                }
+            } else {
+                // HORIZONTAL RESIZE (Desktop)
+                const newWidthPercent = (clientX / window.innerWidth) * 100;
+                if (newWidthPercent > 20 && newWidthPercent < 80) {
+                    chartSection.style.flexBasis = `${newWidthPercent}%`;
+                }
+            }
+        }
+
+        function stopDrag() {
+            if (isResizing) {
+                isResizing = false;
+                updateChart(); // Redraw chart to fit new container
+            }
+        }
+
         // --- SECURE KEY MANAGEMENT ---
         function checkApiKey() {
             const storedKey = localStorage.getItem("jarvis_api_key");
@@ -321,7 +383,22 @@
 
         function updateChart() {
             document.getElementById('tradingview_widget').innerHTML = "";
-            new TradingView.widget({ "autosize": true, "symbol": currentSymbol, "interval": currentInterval, "timezone": "Etc/UTC", "theme": "dark", "style": "1", "locale": "en", "toolbar_bg": "#f1f3f6", "enable_publishing": false, "hide_side_toolbar": true, "allow_symbol_change": true, "container_id": "tradingview_widget", "studies": activeStudies, "details": false });
+            new TradingView.widget({ 
+                "autosize": true, 
+                "symbol": currentSymbol, 
+                "interval": currentInterval, 
+                "timezone": "Etc/UTC", 
+                "theme": "dark", 
+                "style": "1", 
+                "locale": "en", 
+                "toolbar_bg": "#f1f3f6", 
+                "enable_publishing": false, 
+                "hide_side_toolbar": false, /* ENABLED: Chart Tools */
+                "allow_symbol_change": true, 
+                "container_id": "tradingview_widget", 
+                "studies": activeStudies, 
+                "details": false 
+            });
         }
 
         function activateScanner() { scanner.style.animation = 'none'; scanner.offsetHeight; scanner.style.animation = 'scanDown 2s ease-in-out'; }
