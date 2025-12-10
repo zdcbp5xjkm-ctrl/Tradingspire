@@ -11,7 +11,7 @@
     <meta name="theme-color" content="#000000">
     <link rel="apple-touch-icon" href="https://img.icons8.com/nolan/512/iron-man.png">
 
-    <title>TRADING SPIRE JARVIS v8.6 (SCROLL FIX)</title>
+    <title>TRADING SPIRE JARVIS v8.7 (SCROLL FIX)</title>
     <style>
         /* --- NATIVE APP FEEL --- */
         * { 
@@ -35,7 +35,7 @@
             overflow: hidden; 
             user-select: none; 
             -webkit-user-select: none;
-            overscroll-behavior: none; 
+            overscroll-behavior: none; /* Critical: Stops pull-to-refresh on body */
         }
         
         input, textarea { 
@@ -60,6 +60,7 @@
             background: #000; 
             flex-basis: 65%; 
             flex-shrink: 0; 
+            min-height: 0; /* Prevents overflow */
         }
         
         .tradingview-widget-container, #tradingview_widget { 
@@ -93,7 +94,8 @@
             z-index: 11; 
             box-sizing: border-box; 
             flex-grow: 1; 
-            min-height: 0; /* CRITICAL: Allows flex child (chat) to scroll */
+            min-width: 0; /* Prevents flex items from expanding horizontally */
+            min-height: 0; /* CRITICAL: Allows child (chat) to scroll vertically without pushing parent bounds */
             overflow: hidden;
         }
 
@@ -120,7 +122,8 @@
             
             #interface-section { 
                 /* Force flex to fill remaining space properly */
-                flex: 1;
+                flex: 1; 
+                height: auto; /* Let flex control height */
                 width: 100%; 
                 padding-top: 5px;
                 padding-bottom: env(safe-area-inset-bottom, 20px); 
@@ -154,7 +157,8 @@
             font-size: 13px; 
             -webkit-overflow-scrolling: touch; 
             touch-action: pan-y; 
-            overscroll-behavior: contain; /* Prevents scroll chaining/refresh */
+            overscroll-behavior-y: contain; /* CRITICAL: Stops scroll chaining to body (refresh fix) */
+            min-height: 0; /* Ensures scrollbar appears inside instead of expanding container */
         }
         
         .msg { margin-bottom: 15px; padding: 5px; border-left: 2px solid transparent; }
