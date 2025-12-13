@@ -1,278 +1,333 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <!-- iOS PWA Settings -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Jarvis Spire">
+    <meta name="theme-color" content="#000000">
+    <link rel="apple-touch-icon" href="https://img.icons8.com/nolan/512/iron-man.png">
 
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Jarvis Spire">
-<meta name="theme-color" content="#000000">
+    <title>TRADING SPIRE JARVIS v8.9</title>
+    <style>
+        /* --- RESET --- */
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
+        html, body {
+            margin: 0; padding: 0;
+            background-color: #000; color: #0ff;
+            font-family: 'Courier New', Courier, monospace;
+            width: 100%; 
+            height: 100%; 
+            position: fixed; /* Lock body to screen */
+            overflow: hidden; /* Prevent body scroll */
+            overscroll-behavior: none; /* Stop Pull-to-Refresh */
+        }
 
-<title>TRADING SPIRE JARVIS v9.3</title>
+        /* --- MAIN LAYOUT WRAPPER --- */
+        #app-container {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            display: flex;
+            flex-direction: row;
+            overflow: hidden;
+        }
 
-<style>
-* { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+        /* --- CHART SECTION --- */
+        #chart-section {
+            background: #000;
+            flex-basis: 65%; /* Desktop Default */
+            height: 100%;
+            position: relative;
+        }
+        .tradingview-widget-container, #tradingview_widget { height: 100% !important; width: 100% !important; }
 
-html, body {
-    margin:0; padding:0;
-    width:100%; height:100%;
-    overflow:hidden;
-    background:#000;
-    color:#0ff;
-    font-family:Courier New, monospace;
-}
+        /* --- RESIZER --- */
+        #resizer {
+            width: 15px; background: #000; cursor: col-resize;
+            display: flex; justify-content: center; align-items: center;
+            border-left: 1px solid #004444; border-right: 1px solid #004444;
+            z-index: 50; touch-action: none; /* Block touch on handle only */
+        }
 
-#app-container {
-    width:100%;
-    height:100%;
-    display:flex;
-}
+        /* --- INTERFACE --- */
+        #interface-section {
+            background: #020a0a;
+            flex-grow: 1;
+            display: flex; flex-direction: column;
+            min-width: 0; min-height: 0;
+            position: relative;
+            padding: 10px;
+            padding-top: env(safe-area-inset-top);
+        }
 
-#chart-section { flex-basis:65%; background:#000; }
+        /* --- MOBILE OVERRIDE --- */
+        @media (max-width: 768px) {
+            #app-container {
+                display: grid;
+                grid-template-rows: 50% 20px 1fr; /* Chart / Handle / Chat */
+                flex-direction: column;
+            }
 
-#resizer {
-    width:15px;
-    background:#000;
-    border-left:1px solid #004444;
-    border-right:1px solid #004444;
-    cursor:col-resize;
-}
+            #chart-section { width: 100%; height: 100%; flex-basis: auto; }
+            
+            #resizer { 
+                width: 100%; height: 100%; 
+                cursor: row-resize; 
+                border: none; border-top: 1px solid #0ff; border-bottom: 1px solid #0ff;
+            }
 
-#interface-section {
-    flex:1;
-    background:#020a0a;
-    display:flex;
-    flex-direction:column;
-    padding:10px;
-}
+            #interface-section {
+                width: 100%; height: 100%;
+                overflow: hidden;
+                padding-bottom: 0; /* Handled by JS resize */
+            }
+        }
 
-@media (max-width:768px) {
-    #app-container { flex-direction:column; }
-    #resizer {
-        width:100%;
-        height:20px;
-        cursor:row-resize;
-        border-top:1px solid #0ff;
-        border-bottom:1px solid #0ff;
-    }
-}
+        /* --- CHAT COMPONENTS --- */
+        #ai-core-container {
+            height: 60px; display: flex; justify-content: center; align-items: center;
+            border-bottom: 1px solid #003333; margin-bottom: 5px; flex-shrink: 0;
+        }
+        .arc-reactor { width: 40px; height: 40px; border-radius: 50%; border: 3px solid #0ff; box-shadow: 0 0 15px #0ff; position: relative; animation: pulse 3s infinite; }
+        .arc-inner { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 15px; height: 15px; background: #fff; border-radius: 50%; }
+        .thinking .arc-reactor { animation: spinPulse 0.3s infinite linear; border-color: #ff3333; box-shadow: 0 0 30px #ff3333; }
+        @keyframes pulse { 0%,100%{opacity:0.6} 50%{opacity:1} }
+        @keyframes spinPulse { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
 
-#ai-core-container {
-    height:60px;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    border-bottom:1px solid #003333;
-}
+        #chat-window {
+            flex: 1; 
+            overflow-y: scroll; /* Force Scrollbar */
+            -webkit-overflow-scrolling: touch;
+            background: rgba(0, 15, 20, 0.95);
+            border: 1px solid #003333;
+            padding: 10px;
+            font-size: 13px;
+            overscroll-behavior: contain;
+        }
 
-.arc-reactor {
-    width:40px; height:40px;
-    border-radius:50%;
-    border:3px solid #0ff;
-    box-shadow:0 0 15px #0ff;
-    animation:pulse 3s infinite;
-}
+        /* --- FORM & INPUT --- */
+        #input-form {
+            height: 50px; display: flex; gap: 5px; margin-top: 5px; flex-shrink: 0;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        input { 
+            flex: 1; background: #000; border: 1px solid #0ff; color: #fff; 
+            padding: 10px; border-radius: 0; -webkit-appearance: none; 
+            font-size: 16px; /* Prevents iOS Zoom */
+        }
+        button { background: #004444; color: #0ff; border: 1px solid #0ff; padding: 0 20px; font-weight: bold; border-radius: 0; }
 
-.thinking { animation:spin .5s linear infinite; border-color:#ff3333; }
+        /* COLORS */
+        .msg { margin-bottom: 15px; padding: 5px; border-left: 2px solid transparent; }
+        .user { border-left-color: #fff; text-align: right; color: #ccc; }
+        .ai { border-left-color: #0ff; color: #0ff; }
+        .tech-analysis { color: #4deeea; margin-bottom: 5px; }
+        .macro-analysis { color: #ffd700; margin-bottom: 5px; }
+        .final-verdict { color: #ff5df7; font-weight: bold; margin-top: 10px; border-top: 1px solid #333; padding-top: 5px; }
+        .trade-plan { border: 1px solid #fff; background: rgba(255,255,255,0.1); padding: 10px; color: #fff; font-size: 12px; margin: 5px 0; }
+        .bullish { border-color: #0f0; color: #0f0; } .bearish { border-color: #f00; color: #f00; }
 
-@keyframes pulse { 50%{opacity:1} }
-@keyframes spin { to{transform:rotate(360deg)} }
-
-#chat-window {
-    flex:1;
-    overflow-y:auto;
-    background:#000f14;
-    border:1px solid #003333;
-    padding:10px;
-    font-size:13px;
-}
-
-#input-form { display:flex; height:50px; gap:5px; }
-
-input {
-    flex:1;
-    background:#000;
-    border:1px solid #0ff;
-    color:#fff;
-    padding:10px;
-    font-size:16px;
-}
-
-button {
-    background:#004444;
-    color:#0ff;
-    border:1px solid #0ff;
-    padding:0 20px;
-}
-
-.msg { margin-bottom:12px; }
-.user { text-align:right; color:#ccc; }
-.ai { color:#0ff; }
-.system { color:#888; font-style:italic; }
-.error { color:#ff5555; }
-
-#api-modal {
-    position:fixed;
-    inset:0;
-    background:rgba(0,0,0,.95);
-    display:flex;
-    flex-direction:column;
-    justify-content:center;
-    align-items:center;
-    z-index:999;
-}
-.hidden { display:none; }
-</style>
+        /* API MODAL */
+        #api-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 999; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        #api-modal.hidden { display: none; }
+        #api-key-input { width: 80%; margin-bottom: 10px; background: #111; color: #fff; border: 1px solid #0ff; padding: 15px; }
+        #save-key-btn { padding: 15px 30px; background: #0ff; font-weight: bold; }
+        #reset-btn { position: absolute; bottom: 10px; right: 10px; color: #555; background: none; border: none; font-size: 10px; }
+    </style>
 </head>
-
 <body>
 
-<div id="api-modal">
-    <h2>SECURITY CLEARANCE</h2>
-    <input id="api-key-input" placeholder="AIza..." />
-    <button onclick="saveApiKey()">AUTHENTICATE</button>
-</div>
-
-<div id="app-container">
-    <div id="chart-section">
-        <div id="tradingview_widget" style="height:100%"></div>
+    <!-- SECURE LOGIN -->
+    <div id="api-modal">
+        <h2 style="color:#0ff">SECURITY CLEARANCE</h2>
+        <p style="color:#aaa">ENTER TRADING SPIRE KEY</p>
+        <input type="text" id="api-key-input" placeholder="Paste AIzaSy... here">
+        <button id="save-key-btn" onclick="saveApiKey()">AUTHENTICATE</button>
     </div>
-    <div id="resizer"></div>
-    <div id="interface-section">
-        <div id="ai-core-container">
-            <div class="arc-reactor" id="reactor"></div>
+
+    <!-- MAIN APP LAYOUT -->
+    <div id="app-container">
+        <div id="chart-section">
+            <div class="tradingview-widget-container"><div id="tradingview_widget"></div></div>
         </div>
-        <div id="chat-window">
-            <div class="msg ai">SYSTEM READY.</div>
+        
+        <div id="resizer"></div>
+        
+        <div id="interface-section">
+            <div id="ai-core-container"><div class="arc-reactor" id="ai-reactor"><div class="arc-inner"></div></div></div>
+            <div id="chat-window"><div class="msg ai">SYSTEM STABLE.<br>KEYBOARD SAFEGUARD: ACTIVE.</div></div>
+            
+            <!-- FORM WRAPPER PREVENTS RELOAD -->
+            <form id="input-form" onsubmit="handleFormSubmit(event)">
+                <input type="text" id="user-input" placeholder="Cmd..." autocomplete="off">
+                <button type="submit">GO</button>
+            </form>
+            
+            <button id="reset-btn" onclick="resetKey()">RESET KEY</button>
         </div>
-        <form id="input-form">
-            <input id="user-input" autocomplete="off">
-            <button>GO</button>
-        </form>
     </div>
-</div>
 
-<script src="https://s3.tradingview.com/tv.js"></script>
-<script>
-const MODEL = "gemini-2.5-flash";
-let API_KEY = "";
-let currentSymbol="BINANCE:BTCUSDT", currentInterval="D", studies=[];
-let lastChartState="";
+    <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+    <script>
+        const MODEL_NAME = "gemini-2.5-flash"; 
+        let API_KEY = ""; 
+        let currentSymbol = "BINANCE:BTCUSDT", currentInterval = "D", activeStudies = []; 
+        const chatWindow = document.getElementById('chat-window');
+        
+        // --- VIEWPORT STABILIZER (KEYBOARD FIX) ---
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', () => {
+                // Instantly resize app to fit visible area (above keyboard)
+                document.getElementById('app-container').style.height = window.visualViewport.height + 'px';
+                // Scroll to bottom of chat if keyboard opens
+                chatWindow.scrollTop = chatWindow.scrollHeight;
+            });
+        }
 
-const chat = document.getElementById("chat-window");
-const reactor = document.getElementById("reactor");
-
-/* RESIZER */
-let resizing=false;
-const resizer=document.getElementById("resizer");
-const chart=document.getElementById("chart-section");
-
-resizer.onmousedown = resizer.ontouchstart = () => resizing=true;
-window.onmouseup = window.ontouchend = () => resizing=false;
-
-window.onmousemove = e=>{
-    if(!resizing) return;
-    const pct=(e.clientX/window.innerWidth)*100;
-    if(pct>20 && pct<80) chart.style.flexBasis=pct+"%";
-};
-
-window.ontouchmove = e=>{
-    if(!resizing) return;
-    const pct=(e.touches[0].clientY/window.innerHeight)*100;
-    if(pct>20 && pct<80) chart.style.flexBasis=pct+"%";
-};
-
-/* API */
-function saveApiKey(){
-    const v=document.getElementById("api-key-input").value.trim();
-    if(!/^AIza[0-9A-Za-z\-_]{35}$/.test(v)){
-        alert("Invalid API key");
-        return;
-    }
-    localStorage.setItem("jarvis_api_key",v);
-    API_KEY=v;
-    document.getElementById("api-modal").classList.add("hidden");
-    updateChart();
-}
-
-(function(){
-    const k=localStorage.getItem("jarvis_api_key");
-    if(k){
-        API_KEY=k;
-        document.getElementById("api-modal").classList.add("hidden");
-        updateChart();
-    }
-})();
-
-/* CHAT */
-function addMessage(text,type){
-    const div=document.createElement("div");
-    div.className="msg "+type;
-    div.id="msg-"+Date.now()+"-"+Math.random().toString(36).slice(2);
-    div.innerHTML=text;
-    chat.appendChild(div);
-    chat.scrollTop=chat.scrollHeight;
-    return div.id;
-}
-
-/* TRADINGVIEW */
-function updateChart(){
-    const state=`${currentSymbol}|${currentInterval}|${studies.join()}`;
-    if(state===lastChartState) return;
-    lastChartState=state;
-
-    const tv=document.getElementById("tradingview_widget");
-    if(!tv) return;
-    tv.innerHTML="";
-
-    new TradingView.widget({
-        autosize:true,
-        symbol:currentSymbol,
-        interval:currentInterval,
-        theme:"dark",
-        container_id:"tradingview_widget",
-        studies
-    });
-}
-
-/* FORM */
-document.getElementById("input-form").onsubmit=e=>{
-    e.preventDefault();
-    const input=document.getElementById("user-input");
-    const text=input.value.trim();
-    if(!text) return;
-    input.value="";
-    addMessage(text,"user");
-    getAI(text);
-};
-
-/* AI */
-async function getAI(text){
-    if(!API_KEY){
-        addMessage("API key not set","error");
-        return;
-    }
-    reactor.classList.add("thinking");
-    const id=addMessage("PROCESSING...","system");
-    try{
-        const res=await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}`,
-            {
-                method:"POST",
-                headers:{ "Content-Type":"application/json" },
-                body:JSON.stringify({ contents:[{ parts:[{ text }] }] })
+        // --- PREVENT PULL-TO-REFRESH ---
+        document.body.addEventListener('touchmove', function(e) {
+            if (e.target.closest('#chat-window')) {
+                // Allow scroll inside chat
+                e.stopPropagation();
+            } else if (!e.target.closest('#resizer')) {
+                // Block scroll everywhere else
+                e.preventDefault();
             }
-        );
-        const data=await res.json();
-        document.getElementById(id)?.remove();
-        addMessage(data.candidates?.[0]?.content?.parts?.[0]?.text || "ERROR","ai");
-    }catch(e){
-        document.getElementById(id)?.remove();
-        addMessage(e.message,"error");
-    }
-    reactor.classList.remove("thinking");
-}
-</script>
+        }, { passive: false });
+
+        // --- RESIZING LOGIC ---
+        const resizer = document.getElementById('resizer');
+        const appContainer = document.getElementById('app-container');
+        let isResizing = false;
+
+        resizer.addEventListener('touchstart', (e) => { isResizing = true; e.preventDefault(); });
+        resizer.addEventListener('mousedown', (e) => { isResizing = true; });
+        window.addEventListener('touchend', () => { isResizing = false; updateChart(); });
+        window.addEventListener('mouseup', () => { isResizing = false; updateChart(); });
+        window.addEventListener('touchmove', (e) => resize(e.touches[0].clientY), { passive: false });
+        window.addEventListener('mousemove', (e) => resize(e.clientY));
+
+        function resize(yPos) {
+            if (!isResizing || window.innerWidth > 768) return;
+            const percentage = (yPos / window.innerHeight) * 100;
+            if (percentage > 20 && percentage < 80) {
+                appContainer.style.gridTemplateRows = `${percentage}% 20px 1fr`;
+            }
+        }
+
+        // --- CORE LOGIC ---
+        function checkApiKey() {
+            const k = localStorage.getItem("jarvis_api_key");
+            if(k) { API_KEY = k; document.getElementById("api-modal").classList.add("hidden"); updateChart(); }
+        }
+        function saveApiKey() {
+            const v = document.getElementById("api-key-input").value.trim();
+            if(v.startsWith("AIza")) { localStorage.setItem("jarvis_api_key", v); API_KEY = v; document.getElementById("api-modal").classList.add("hidden"); }
+            else alert("Invalid Key");
+        }
+        function resetKey() { if(confirm("Reset Key?")) { localStorage.removeItem("jarvis_api_key"); location.reload(); } }
+        
+        checkApiKey();
+
+        function handleFormSubmit(event) {
+            event.preventDefault(); // CRITICAL: STOPS RELOAD
+            executeCommand();
+            return false;
+        }
+
+        async function executeCommand() {
+            const input = document.getElementById('user-input');
+            const text = input.value.trim().toUpperCase();
+            if (!text) return;
+            addMessage(text, 'user');
+            input.value = ''; 
+            // Do NOT blur input on mobile to keep keyboard open for rapid chatting
+            // input.blur(); 
+
+            let newSymbol = parseSymbol(text), newInterval = parseInterval(text);
+            if (newSymbol && newSymbol !== currentSymbol) { currentSymbol = newSymbol; updateChart(); }
+            if (newInterval && newInterval !== currentInterval) { currentInterval = newInterval; updateChart(); }
+            
+            if (text.includes("DIVERGENCE") || text.includes("DIV")) { activeStudies = ["RSI@tv-basicstudies", "MACD@tv-basicstudies"]; updateChart(); }
+            if (text.includes("CLEAN")) { activeStudies = []; updateChart(); }
+
+            const isGeneral = isGeneralConversation(text);
+            await getAIAnalysis(text, currentSymbol, currentInterval, isGeneral);
+        }
+
+        function isGeneralConversation(text) {
+            const keywords = ["JOKE", "HELLO", "HI", "ROAST", "MARKET", "NEWS", "FED"];
+            const tech = ["SCAN", "CHART", "PRICE", "BUY", "SELL", "BTC", "GOLD"];
+            return keywords.some(k => text.includes(k)) && !tech.some(t => text.includes(t));
+        }
+
+        async function fetchLivePrice(s) {
+            const map = { "BINANCE:BTCUSDT": "bitcoin", "BINANCE:ETHUSDT": "ethereum", "OANDA:XAUUSD": "tether-gold", "TVC:SILVER": "kinesis-silver" };
+            const id = map[s]; if(!id) return null;
+            try { const r = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${id}&vs_currencies=usd&include_24hr_change=true`); return (await r.json())[id]; } catch { return null; }
+        }
+
+        function parseSymbol(t) {
+            if (t.includes("BTC")) return "BINANCE:BTCUSDT"; if (t.includes("ETH")) return "BINANCE:ETHUSDT";
+            if (t.includes("GOLD") || t.includes("XAU")) return "OANDA:XAUUSD"; if (t.includes("EUR")) return "FX:EURUSD";
+            return null;
+        }
+        
+        function parseInterval(t) {
+            if (t.includes("1H") || t.includes("60 MIN")) return "60";
+            if (t.includes("4H")) return "240"; if (t.includes("DAY")) return "D"; return null;
+        }
+
+        function updateChart() {
+            document.getElementById('tradingview_widget').innerHTML = "";
+            new TradingView.widget({ "autosize": true, "symbol": currentSymbol, "interval": currentInterval, "timezone": "Etc/UTC", "theme": "dark", "style": "1", "locale": "en", "toolbar_bg": "#f1f3f6", "enable_publishing": false, "hide_side_toolbar": false, "allow_symbol_change": true, "container_id": "tradingview_widget", "studies": activeStudies, "details": false });
+        }
+
+        async function getAIAnalysis(userText, symbol, interval, isGeneral) {
+            const aiReactor = document.getElementById('ai-core-container'); // Fixed selector
+            aiReactor.querySelector('.arc-reactor').classList.add('thinking');
+            const loadingId = addMessage("PROCESSING...", 'system');
+            let liveDataString = "";
+            
+            if (!isGeneral) { 
+                const live = await fetchLivePrice(symbol); 
+                if (live) liveDataString = `LIVE DATA: $${live.usd} (${live.usd_24h_change.toFixed(2)}%)`; 
+            }
+
+            const prompt = `You are TRADING SPIRE JARVIS. User: "${userText}". Context: ${symbol}, ${interval}. ${liveDataString}.
+            MODE A (TECH): <div class="tech-analysis">🔭 ANALYSIS: ...</div> <div class="trade-plan [bullish/bearish]">PLAN: ENTRY/TARGET/STOP</div> <div class="final-verdict">🔮 VERDICT: ...</div>
+            MODE B (MACRO): <div class="macro-analysis">📊 DATA: ...</div> <div class="final-verdict">🔮 VERDICT: ...</div>
+            MODE C (CHAT): Witty reply.`;
+
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${API_KEY}`, {
+                    method: "POST", headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                });
+                const data = await response.json();
+                const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || "Error";
+                document.getElementById(loadingId)?.remove();
+                aiReactor.querySelector('.arc-reactor').classList.remove('thinking');
+                addMessage(aiText, 'ai');
+            } catch (e) {
+                document.getElementById(loadingId)?.remove();
+                aiReactor.querySelector('.arc-reactor').classList.remove('thinking');
+                addMessage("NET ERROR: " + e.message, 'error');
+            }
+        }
+
+        function addMessage(text, type) {
+            const div = document.createElement('div');
+            div.className = `msg ${type}`;
+            div.innerHTML = text.replace(/\n/g, '<br>');
+            chatWindow.appendChild(div);
+            chatWindow.scrollTop = chatWindow.scrollHeight; 
+            return div.id = 'msg-' + Date.now();
+        }
+    </script>
 </body>
 </html>
