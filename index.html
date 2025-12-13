@@ -11,7 +11,7 @@
     <meta name="theme-color" content="#000000">
     <link rel="apple-touch-icon" href="https://img.icons8.com/nolan/512/iron-man.png">
 
-    <title>TRADING SPIRE JARVIS v9.3 (VIEWPORT ENGINE)</title>
+    <title>TRADING SPIRE JARVIS v9.4 (INPUT FIX)</title>
     <style>
         /* --- RESET --- */
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -29,15 +29,25 @@
             font-family: 'Courier New', Courier, monospace;
             width: 100%; 
             height: 100%; 
-            position: fixed; /* Pins app to screen, prevents rubber-banding */
+            position: fixed; /* Pins app to screen */
             overflow: hidden;
             user-select: none; -webkit-user-select: none;
+            touch-action: none; /* Keeps app stable, BUT requires overrides below */
+        }
+
+        /* --- CRITICAL INPUT FIX --- */
+        /* This allows tapping inputs even when the body is locked */
+        input, textarea, button {
+            pointer-events: auto !important;
+            user-select: text !important;
+            -webkit-user-select: text !important;
+            touch-action: manipulation !important; /* Allows tap/focus */
         }
 
         /* --- MAIN APP CONTAINER --- */
         #app-container {
             width: 100%;
-            height: 100%; /* Will be overridden by JS for keyboard safety */
+            height: 100%; 
             display: flex;
             flex-direction: row; /* Desktop default */
             overflow: hidden;
@@ -58,6 +68,7 @@
             display: flex; justify-content: center; align-items: center;
             border-left: 1px solid #004444; border-right: 1px solid #004444;
             z-index: 50;
+            touch-action: none;
         }
 
         /* --- INTERFACE SECTION --- */
@@ -117,6 +128,7 @@
             padding: 10px;
             font-size: 13px;
             overscroll-behavior: contain; /* Prevents scroll chaining to body */
+            touch-action: pan-y; /* Allow vertical scroll */
         }
 
         #input-form {
@@ -128,7 +140,6 @@
             flex: 1; background: #000; border: 1px solid #0ff; color: #fff; 
             padding: 10px; border-radius: 0; -webkit-appearance: none; 
             font-size: 16px; /* CRITICAL: 16px prevents iOS zoom on focus */
-            user-select: text; -webkit-user-select: text;
         }
         button { background: #004444; color: #0ff; border: 1px solid #0ff; padding: 0 20px; font-weight: bold; border-radius: 0; }
 
