@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <!-- Viewport fix for keyboard resizing -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
     
     <!-- iOS PWA Settings -->
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -11,34 +12,37 @@
     <meta name="theme-color" content="#000000">
     <link rel="apple-touch-icon" href="https://img.icons8.com/nolan/512/iron-man.png">
 
-    <title>TRADING SPIRE JARVIS v8.8 (GRID FIX)</title>
+    <title>TRADING SPIRE JARVIS v9.6 (RESTORED)</title>
     <style>
-        /* --- NATIVE APP FEEL --- */
+        /* --- RESET --- */
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         
+        /* CORE LAYOUT - Uses Dynamic Viewport Height (dvh) to fix keyboard issues */
         html, body {
             margin: 0; padding: 0;
             background-color: #000; color: #0ff;
             font-family: 'Courier New', Courier, monospace;
-            width: 100%; height: 100%; /* Force full height */
-            overflow: hidden; /* KILL BODY SCROLL */
-            user-select: none; -webkit-user-select: none;
-            touch-action: none; /* Disable default browser gestures */
+            width: 100vw; 
+            height: 100dvh; /* Adapts to keyboard instantly */
+            overflow: hidden; 
+            position: fixed; /* Anchors app to screen */
+            overscroll-behavior: none; /* Stops pull-to-refresh bounce */
         }
         
-        input { user-select: text; -webkit-user-select: text; }
+        /* Allow selecting text in inputs */
+        input, textarea { user-select: text; -webkit-user-select: text; }
 
-        /* --- LAYOUT ENGINE: DESKTOP (Row) vs MOBILE (Column) --- */
+        /* --- MAIN CONTAINER --- */
         #app-container {
             display: flex;
             width: 100%; height: 100%;
-            flex-direction: row;
+            flex-direction: row; /* Desktop Default */
         }
 
-        /* --- CHART --- */
+        /* --- CHART SECTION --- */
         #chart-section {
             background: #000;
-            flex-basis: 65%; /* Desktop Default */
+            flex-basis: 65%; /* Desktop Width */
             height: 100%;
             position: relative;
         }
@@ -52,45 +56,47 @@
             z-index: 50;
         }
 
-        /* --- INTERFACE --- */
+        /* --- INTERFACE SECTION --- */
         #interface-section {
             background: #020a0a;
             flex-grow: 1;
             display: flex; flex-direction: column;
-            min-width: 0; min-height: 0; /* Critical flex fix */
+            min-width: 0; /* Flexbox overflow fix */
             position: relative;
             padding: 10px;
             padding-top: env(safe-area-inset-top);
         }
 
-        /* --- MOBILE OVERRIDE (CSS GRID - ROCK SOLID) --- */
+        /* --- MOBILE LAYOUT (Column) --- */
         @media (max-width: 768px) {
             #app-container {
-                display: grid;
-                grid-template-rows: 50% 20px auto; /* Chart / Handle / Chat */
-                height: 100%;
-                width: 100%;
+                flex-direction: column;
             }
 
-            #chart-section { width: 100%; height: 100%; flex-basis: auto; }
+            #chart-section { 
+                flex-basis: 50%; /* 50% Height */
+                width: 100%; 
+                flex-shrink: 0;
+            }
             
             #resizer { 
-                width: 100%; height: 100%; 
-                cursor: row-resize; 
+                width: 100%; height: 20px; cursor: row-resize; 
                 border: none; border-top: 1px solid #0ff; border-bottom: 1px solid #0ff;
+                flex-shrink: 0;
             }
 
             #interface-section {
-                width: 100%; height: 100%;
-                overflow: hidden; /* Force containment */
-                padding-bottom: env(safe-area-inset-bottom, 10px);
+                flex-grow: 1; /* Fills remaining space automatically */
+                width: 100%; 
+                padding-bottom: env(safe-area-inset-bottom);
+                overflow: hidden;
             }
         }
 
-        /* --- CHAT COMPONENTS --- */
+        /* --- VISUALS --- */
         #ai-core-container {
             height: 60px; display: flex; justify-content: center; align-items: center;
-            border-bottom: 1px solid #003333; margin-bottom: 5px; flex-shrink: 0;
+            border-bottom: 1px solid #003333; margin-bottom: 5px; flex-shrink: 0; position: relative;
         }
         .arc-reactor { width: 40px; height: 40px; border-radius: 50%; border: 3px solid #0ff; box-shadow: 0 0 15px #0ff; position: relative; animation: pulse 3s infinite; }
         .arc-inner { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 15px; height: 15px; background: #fff; border-radius: 50%; }
@@ -98,21 +104,30 @@
         @keyframes pulse { 0%,100%{opacity:0.6} 50%{opacity:1} }
         @keyframes spinPulse { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
 
+        #clear-history-btn {
+            position: absolute; right: 0; top: 15px;
+            background: none; border: 1px solid #333; color: #555;
+            font-size: 10px; padding: 5px; cursor: pointer;
+        }
+
+        /* --- CHAT WINDOW --- */
         #chat-window {
-            flex: 1; /* Take all remaining space */
-            overflow-y: auto; /* ENABLE SCROLL */
-            -webkit-overflow-scrolling: touch;
+            flex: 1; 
+            overflow-y: auto; /* Enable Scroll */
+            -webkit-overflow-scrolling: touch; /* Smooth iOS Scroll */
             background: rgba(0, 15, 20, 0.95);
             border: 1px solid #003333;
             padding: 10px;
             font-size: 13px;
-            /* CRITICAL SCROLL FIXES */
-            touch-action: pan-y; 
-            overscroll-behavior: contain;
+            overscroll-behavior: contain; /* Prevents scroll bubbling */
         }
 
+        /* --- INPUT --- */
         #input-box { height: 50px; display: flex; gap: 5px; margin-top: 5px; flex-shrink: 0; }
-        input { flex: 1; background: #000; border: 1px solid #0ff; color: #fff; padding: 10px; border-radius: 0; -webkit-appearance: none; font-size: 16px; }
+        input { 
+            flex: 1; background: #000; border: 1px solid #0ff; color: #fff; padding: 10px; 
+            border-radius: 0; -webkit-appearance: none; font-size: 16px; /* 16px stops iOS zoom */
+        }
         button { background: #004444; color: #0ff; border: 1px solid #0ff; padding: 0 20px; font-weight: bold; border-radius: 0; }
 
         /* COLORS */
@@ -152,8 +167,11 @@
         <div id="resizer"></div>
         
         <div id="interface-section">
-            <div id="ai-core-container"><div class="arc-reactor" id="ai-reactor"><div class="arc-inner"></div></div></div>
-            <div id="chat-window"><div class="msg ai">SYSTEM READY.<br>SCROLL LOCK: ACTIVE.</div></div>
+            <div id="ai-core-container">
+                <div class="arc-reactor" id="ai-reactor"><div class="arc-inner"></div></div>
+                <button id="clear-history-btn" onclick="clearChatHistory()">WIPE MEMORY</button>
+            </div>
+            <div id="chat-window"><div class="msg ai">SYSTEM RESTORED (v9.6).<br>MEMORY & STABILITY ACTIVE.</div></div>
             <div id="input-box"><input type="text" id="user-input" placeholder="Cmd..." onkeydown="if(event.key==='Enter') executeCommand()"><button onclick="executeCommand()">GO</button></div>
             <button id="reset-btn" onclick="resetKey()">RESET KEY</button>
         </div>
@@ -164,50 +182,36 @@
         const MODEL_NAME = "gemini-2.5-flash"; 
         let API_KEY = ""; 
         let currentSymbol = "BINANCE:BTCUSDT", currentInterval = "D", activeStudies = []; 
+        let chatHistory = []; 
         
-        // --- JS SCROLL LOCK (The "Hammer" Fix) ---
-        // Prevents body scrolling (refresh) but allows chat scrolling
-        document.body.addEventListener('touchmove', function(e) {
-            const chatWindow = document.getElementById('chat-window');
-            // Check if touch is inside chat window
-            if (chatWindow.contains(e.target)) {
-                // Allow scroll only if content overflows
-                const isScrollable = chatWindow.scrollHeight > chatWindow.clientHeight;
-                if (!isScrollable) e.preventDefault(); // Stop if no scroll needed
-                // Otherwise let it pass (native scroll)
-                e.stopPropagation(); 
-            } else if (!e.target.closest('#resizer')) {
-                // Block everything else except Resizer
-                e.preventDefault();
-            }
-        }, { passive: false });
+        const chatWindow = document.getElementById('chat-window');
+        const aiReactor = document.getElementById('ai-core-container');
 
         // --- RESIZING LOGIC ---
         const resizer = document.getElementById('resizer');
-        const appContainer = document.getElementById('app-container');
+        const chartSection = document.getElementById('chart-section');
         let isResizing = false;
 
         resizer.addEventListener('touchstart', (e) => { isResizing = true; e.preventDefault(); });
         resizer.addEventListener('mousedown', (e) => { isResizing = true; });
-
         window.addEventListener('touchend', () => { isResizing = false; updateChart(); });
         window.addEventListener('mouseup', () => { isResizing = false; updateChart(); });
-
         window.addEventListener('touchmove', (e) => resize(e.touches[0].clientY), { passive: false });
         window.addEventListener('mousemove', (e) => resize(e.clientY));
 
         function resize(yPos) {
-            if (!isResizing || window.innerWidth > 768) return; // Only for mobile vertical resize
+            if (!isResizing || window.innerWidth > 768) return; 
             const percentage = (yPos / window.innerHeight) * 100;
             if (percentage > 20 && percentage < 80) {
-                appContainer.style.gridTemplateRows = `${percentage}% 20px auto`;
+                chartSection.style.flexBasis = `${percentage}%`;
+                // No need to set height explicitly with flex-column
             }
         }
 
-        // --- CORE LOGIC ---
+        // --- CORE LOGIC & MEMORY ---
         function checkApiKey() {
             const k = localStorage.getItem("jarvis_api_key");
-            if(k) { API_KEY = k; document.getElementById("api-modal").classList.add("hidden"); updateChart(); }
+            if(k) { API_KEY = k; document.getElementById("api-modal").classList.add("hidden"); updateChart(); loadChatHistory(); }
         }
         function saveApiKey() {
             const v = document.getElementById("api-key-input").value.trim();
@@ -216,6 +220,36 @@
         }
         function resetKey() { if(confirm("Reset Key?")) { localStorage.removeItem("jarvis_api_key"); location.reload(); } }
         
+        // --- MEMORY FUNCTIONS ---
+        function saveChatHistory() {
+            localStorage.setItem("jarvis_chat_history", JSON.stringify(chatHistory));
+        }
+
+        function loadChatHistory() {
+            const saved = localStorage.getItem("jarvis_chat_history");
+            if (saved) {
+                chatHistory = JSON.parse(saved);
+                const chatWindow = document.getElementById('chat-window');
+                if(chatHistory.length > 0) chatWindow.innerHTML = "";
+                
+                chatHistory.forEach(msg => {
+                    const div = document.createElement('div');
+                    div.className = `msg ${msg.type}`;
+                    div.innerHTML = msg.text;
+                    chatWindow.appendChild(div);
+                });
+                chatWindow.scrollTop = chatWindow.scrollHeight;
+            }
+        }
+
+        function clearChatHistory() {
+            if(confirm("Wipe Memory?")) {
+                localStorage.removeItem("jarvis_chat_history");
+                chatHistory = [];
+                document.getElementById('chat-window').innerHTML = '<div class="msg ai">MEMORY WIPED.<br>SYSTEM READY.</div>';
+            }
+        }
+
         checkApiKey();
 
         async function executeCommand() {
@@ -223,7 +257,8 @@
             const text = input.value.trim().toUpperCase();
             if (!text) return;
             addMessage(text, 'user');
-            input.value = ''; input.blur(); 
+            input.value = ''; 
+            // input.blur(); // Keeping keyboard open is usually better for chat apps
 
             let newSymbol = parseSymbol(text), newInterval = parseInterval(text);
             if (newSymbol && newSymbol !== currentSymbol) { currentSymbol = newSymbol; updateChart(); }
@@ -265,9 +300,9 @@
         }
 
         async function getAIAnalysis(userText, symbol, interval, isGeneral) {
-            const aiReactor = document.getElementById('ai-reactor');
-            aiReactor.classList.add('thinking');
-            const loadingId = addMessage("PROCESSING...", 'system');
+            const aiReactorEl = aiReactor.querySelector('.arc-reactor');
+            aiReactorEl.classList.add('thinking');
+            const loadingId = addMessage("PROCESSING...", 'system', false);
             let liveDataString = "";
             
             if (!isGeneral) { 
@@ -288,22 +323,27 @@
                 const data = await response.json();
                 const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || "Error";
                 document.getElementById(loadingId)?.remove();
-                aiReactor.classList.remove('thinking');
+                aiReactorEl.classList.remove('thinking');
                 addMessage(aiText, 'ai');
             } catch (e) {
                 document.getElementById(loadingId)?.remove();
-                aiReactor.classList.remove('thinking');
+                aiReactorEl.classList.remove('thinking');
                 addMessage("NET ERROR: " + e.message, 'error');
             }
         }
 
-        function addMessage(text, type) {
+        function addMessage(text, type, saveToMemory = true) {
             const div = document.createElement('div');
             div.className = `msg ${type}`;
             div.innerHTML = text.replace(/\n/g, '<br>');
             const chat = document.getElementById('chat-window');
             chat.appendChild(div);
-            chat.scrollTop = chat.scrollHeight; // Auto scroll to bottom
+            chat.scrollTop = chat.scrollHeight; 
+            
+            if (saveToMemory) {
+                chatHistory.push({ text: div.innerHTML, type: type });
+                saveChatHistory();
+            }
             return div.id = 'msg-' + Date.now();
         }
     </script>
