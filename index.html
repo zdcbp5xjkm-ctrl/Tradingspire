@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <!-- Removed 'interactive-widget' to let JS handle resizing manually for better control -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <!-- CRITICAL FIX: interactive-widget=resizes-content forces the browser to resize the view when keyboard opens -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
     
     <!-- iOS PWA Settings -->
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -12,33 +12,40 @@
     <meta name="theme-color" content="#000000">
     <link rel="apple-touch-icon" href="https://img.icons8.com/nolan/512/iron-man.png">
 
-    <title>TRADING SPIRE JARVIS v9.7 (VIEWPORT SYNC)</title>
+    <title>TRADING SPIRE JARVIS v10.0</title>
     <style>
         /* --- RESET --- */
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         
         /* LOCK PAGE */
-        html, body {
+        html {
+            height: 100%;
+            overflow: hidden; /* No scroll on root */
+        }
+
+        body {
             margin: 0; padding: 0;
             background-color: #000; color: #0ff;
             font-family: 'Courier New', Courier, monospace;
             width: 100%; 
             height: 100%; 
-            position: fixed; /* Pins the app, preventing scroll bounce on body */
+            position: fixed; /* Pins the app */
             overflow: hidden;
-            overscroll-behavior: none; /* Stops pull-to-refresh */
+            overscroll-behavior: none; /* Stops pull-to-refresh natively */
         }
         
-        input, textarea { user-select: text; -webkit-user-select: text; }
+        /* Ensure inputs work normally */
+        input, textarea { 
+            user-select: text; 
+            -webkit-user-select: text; 
+        }
 
         /* --- MAIN CONTAINER --- */
         #app-container {
             display: flex;
             width: 100%; 
-            height: 100%; /* Will be dynamically updated by JS */
+            height: 100%; 
             flex-direction: row; /* Desktop Default */
-            position: absolute;
-            top: 0; left: 0;
         }
 
         /* --- CHART SECTION --- */
@@ -82,7 +89,7 @@
             }
             
             #resizer { 
-                width: 100%; height: 20px; cursor: row-resize; 
+                width: 100%; height: 25px; cursor: row-resize; 
                 border: none; border-top: 1px solid #0ff; border-bottom: 1px solid #0ff;
                 flex-shrink: 0;
             }
@@ -90,7 +97,7 @@
             #interface-section {
                 flex-grow: 1; 
                 width: 100%; 
-                /* Padding bottom removed here, handled by input box position */
+                /* Removed bottom padding, let flex handle it */
                 overflow: hidden;
             }
         }
@@ -121,7 +128,7 @@
             border: 1px solid #003333;
             padding: 10px;
             font-size: 13px;
-            /* CRITICAL: Allows scroll inside chat, prevents body refresh */
+            /* Allow scrolling here, but contain it so it doesn't pull the body */
             overscroll-behavior: contain; 
         }
 
@@ -131,8 +138,8 @@
             display: flex; gap: 5px; 
             margin-top: 5px; 
             flex-shrink: 0; 
-            /* Extra padding for safe area */
-            padding-bottom: env(safe-area-inset-bottom, 5px);
+            /* Essential for iPhone X/11/12+ Home Bar */
+            padding-bottom: env(safe-area-inset-bottom);
         }
         input { 
             flex: 1; background: #000; border: 1px solid #0ff; color: #fff; padding: 10px; 
@@ -153,7 +160,7 @@
         /* API MODAL */
         #api-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 999; display: flex; flex-direction: column; justify-content: center; align-items: center; }
         #api-modal.hidden { display: none; }
-        #api-key-input { width: 80%; margin-bottom: 10px; background: #111; color: #fff; border: 1px solid #0ff; padding: 15px; }
+        #api-key-input { width: 80%; margin-bottom: 10px; background: #111; color: #fff; border: 1px solid #0ff; padding: 15px; font-family: monospace; }
         #save-key-btn { padding: 15px 30px; background: #0ff; font-weight: bold; }
         #reset-btn { position: absolute; bottom: 10px; right: 10px; color: #555; background: none; border: none; font-size: 10px; }
     </style>
@@ -181,7 +188,7 @@
                 <div class="arc-reactor" id="ai-reactor"><div class="arc-inner"></div></div>
                 <button id="clear-history-btn" onclick="clearChatHistory()">WIPE MEMORY</button>
             </div>
-            <div id="chat-window"><div class="msg ai">SYSTEM ONLINE (v9.7).<br>VIEWPORT SYNC: ACTIVE.</div></div>
+            <div id="chat-window"><div class="msg ai">SYSTEM ONLINE (v10.0).<br>CLEAN SLATE PROTOCOL.</div></div>
             <div id="input-box"><input type="text" id="user-input" placeholder="Cmd..." onkeydown="if(event.key==='Enter') executeCommand()"><button onclick="executeCommand()">GO</button></div>
             <button id="reset-btn" onclick="resetKey()">RESET KEY</button>
         </div>
@@ -196,29 +203,6 @@
         
         const chatWindow = document.getElementById('chat-window');
         const aiReactor = document.getElementById('ai-core-container');
-
-        // --- MANUALLY SYNC HEIGHT (KEYBOARD FIX) ---
-        // This function forces the app to fit the visible screen area exactly
-        function adjustLayout() {
-            if (window.visualViewport) {
-                document.getElementById('app-container').style.height = `${window.visualViewport.height}px`;
-                // If keyboard opens, scroll chat to bottom to keep latest msg visible
-                chatWindow.scrollTop = chatWindow.scrollHeight;
-            }
-        }
-
-        // Listen for resize (keyboard open/close)
-        if (window.visualViewport) {
-            window.visualViewport.addEventListener('resize', adjustLayout);
-            window.visualViewport.addEventListener('scroll', adjustLayout); // Handles iOS scroll shift
-        } else {
-            window.addEventListener('resize', () => {
-                document.getElementById('app-container').style.height = `${window.innerHeight}px`;
-            });
-        }
-        
-        // Initial set
-        adjustLayout();
 
         // --- RESIZING LOGIC ---
         const resizer = document.getElementById('resizer');
@@ -291,8 +275,8 @@
             addMessage(text, 'user');
             input.value = ''; 
             
-            // Re-sync layout just in case
-            adjustLayout();
+            // Re-focus to keep keyboard open (optional, user preference)
+            // input.focus(); 
 
             let newSymbol = parseSymbol(text), newInterval = parseInterval(text);
             if (newSymbol && newSymbol !== currentSymbol) { currentSymbol = newSymbol; updateChart(); }
