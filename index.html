@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <!-- UPDATED VIEWPORT: interactive-widget=resizes-content handles keyboard resizing natively -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
     
     <!-- iOS PWA Settings -->
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -11,7 +12,7 @@
     <meta name="theme-color" content="#000000">
     <link rel="apple-touch-icon" href="https://img.icons8.com/nolan/512/iron-man.png">
 
-    <title>TRADING SPIRE JARVIS v9.1 (IRONCLAD)</title>
+    <title>TRADING SPIRE JARVIS v9.2 (PHYSICS FIX)</title>
     <style>
         /* --- RESET & LOCK --- */
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -33,7 +34,7 @@
             display: flex;
             flex-direction: row;
             overflow: hidden;
-            /* Height will be controlled by JS for keyboard safety */
+            /* Flex layout handles resizing better with the new viewport tag */
         }
 
         /* --- CHART SECTION --- */
@@ -67,22 +68,28 @@
         /* --- MOBILE OVERRIDE --- */
         @media (max-width: 768px) {
             #app-container {
-                display: grid;
-                grid-template-rows: 50% 25px 1fr; /* Explicit grid rows */
+                display: flex;
                 flex-direction: column;
+                /* CSS Grid replaced with Flex for smoother keyboard transition */
             }
 
-            #chart-section { width: 100%; height: 100%; flex-basis: auto; }
+            #chart-section { 
+                width: 100%; 
+                flex-basis: 50%; /* Initial Height */
+                flex-shrink: 0; /* Prevent crushing when keyboard opens */
+            }
             
             #resizer { 
-                width: 100%; height: 100%; cursor: row-resize; 
+                width: 100%; height: 25px; cursor: row-resize; 
                 border: none; border-top: 1px solid #0ff; border-bottom: 1px solid #0ff;
-                /* Thicker drag area */
+                flex-shrink: 0;
             }
 
             #interface-section {
-                width: 100%; height: 100%;
-                overflow: hidden; padding-bottom: 0;
+                width: 100%; 
+                flex-grow: 1; /* Takes remaining space (shrinks when keyboard opens) */
+                overflow: hidden; 
+                padding-bottom: 0;
             }
         }
 
@@ -105,9 +112,8 @@
             border: 1px solid #003333;
             padding: 10px;
             font-size: 13px;
-            /* CRITICAL: Allows scroll inside, blocks propagation outside */
-            overscroll-behavior: contain;
-            touch-action: pan-y; 
+            /* Standard scroll behavior, JS handles the blocking */
+            overscroll-behavior: none; 
         }
 
         #input-form {
@@ -159,7 +165,7 @@
         
         <div id="interface-section">
             <div id="ai-core-container"><div class="arc-reactor" id="ai-reactor"><div class="arc-inner"></div></div></div>
-            <div id="chat-window"><div class="msg ai">SYSTEM OPTIMIZED.<br>TOUCH LOCK: ACTIVE.</div></div>
+            <div id="chat-window"><div class="msg ai">SYSTEM OPTIMIZED.<br>SCROLL PHYSICS: ACTIVE.</div></div>
             
             <!-- FORM WRAPPER -->
             <form id="input-form" onsubmit="handleFormSubmit(event)">
@@ -178,37 +184,59 @@
         let currentSymbol = "BINANCE:BTCUSDT", currentInterval = "D", activeStudies = []; 
         const chatWindow = document.getElementById('chat-window');
         
-        // --- IRONCLAD MOBILE FIXES ---
+        // --- SMART TOUCH PHYSICS (THE "ANTI-BOUNCE" FIX) ---
+        // This manually handles touch events to allow scrolling ONLY inside the chat
+        // and blocks the body refresh/bounce.
+        let touchStartY = 0;
 
-        // 1. TOUCH LOCK: Stops "Pull-to-Refresh" on Body, allows Chat Scroll
+        document.body.addEventListener('touchstart', function(e) {
+            touchStartY = e.touches[0].clientY;
+        }, { passive: false });
+
         document.body.addEventListener('touchmove', function(e) {
-            if (e.target.closest('#chat-window')) {
-                // If inside chat, allow scroll (don't prevent default)
-                // But stop propagation so it doesn't bubble to body
-                e.stopPropagation();
+            const touchY = e.touches[0].clientY;
+            const touchDiff = touchY - touchStartY;
+            
+            // Check if user is trying to scroll the Chat Window
+            const el = e.target.closest('#chat-window');
+            if (el) {
+                const scrollTop = el.scrollTop;
+                const scrollHeight = el.scrollHeight;
+                const height = el.clientHeight;
+
+                // If at Top and pulling Down -> BLOCK
+                if (scrollTop === 0 && touchDiff > 0) {
+                    e.preventDefault();
+                }
+                // If at Bottom and pulling Up -> BLOCK
+                else if (scrollTop + height >= scrollHeight && touchDiff < 0) {
+                    e.preventDefault();
+                }
+                // Otherwise allow internal scroll (Do nothing, let default happen)
+                else {
+                    e.stopPropagation();
+                }
             } else if (e.target.closest('#resizer')) {
-                // Allow resizer logic to handle it
+                // Allow resizer logic to work
             } else {
-                // Block everything else (headers, chart container gaps)
+                // Block everything else (headers, gaps) to prevent refresh
                 e.preventDefault();
             }
         }, { passive: false });
 
-        // 2. VIEWPORT MANAGER: Handles Keyboard Resize Instantly
-        if (window.visualViewport) {
-            window.visualViewport.addEventListener('resize', () => {
-                // Set container height to match visible screen area exactly
-                document.getElementById('app-container').style.height = window.visualViewport.height + 'px';
-                // Force scroll to top (prevents document from being pushed up)
-                window.scrollTo(0, 0);
-                // Ensure input is visible
+        // --- KEYBOARD DOCKING FIX ---
+        // When input is focused, ensure we are at the bottom
+        const inputField = document.getElementById('user-input');
+        inputField.addEventListener('focus', () => {
+            setTimeout(() => {
                 chatWindow.scrollTop = chatWindow.scrollHeight;
-            });
-        }
+                // Force layout update if needed (mostly handled by interactive-widget viewport)
+            }, 300);
+        });
 
         // --- RESIZING LOGIC ---
         const resizer = document.getElementById('resizer');
-        const appContainer = document.getElementById('app-container');
+        const chartSection = document.getElementById('chart-section');
         let isResizing = false;
 
         resizer.addEventListener('touchstart', (e) => { isResizing = true; e.preventDefault(); });
@@ -222,7 +250,8 @@
             if (!isResizing || window.innerWidth > 768) return;
             const percentage = (yPos / window.innerHeight) * 100;
             if (percentage > 20 && percentage < 80) {
-                appContainer.style.gridTemplateRows = `${percentage}% 25px 1fr`;
+                chartSection.style.flexBasis = `${percentage}%`;
+                chartSection.style.height = `${percentage}%`; // Explicit for flex column
             }
         }
 
@@ -241,7 +270,7 @@
         checkApiKey();
 
         function handleFormSubmit(event) {
-            event.preventDefault(); // CRITICAL: STOPS RELOAD
+            event.preventDefault(); 
             executeCommand();
             return false;
         }
@@ -252,8 +281,7 @@
             if (!text) return;
             addMessage(text, 'user');
             input.value = ''; 
-            // NO BLUR: Keeps keyboard open for faster chatting
-
+            
             let newSymbol = parseSymbol(text), newInterval = parseInterval(text);
             if (newSymbol && newSymbol !== currentSymbol) { currentSymbol = newSymbol; updateChart(); }
             if (newInterval && newInterval !== currentInterval) { currentInterval = newInterval; updateChart(); }
@@ -294,7 +322,7 @@
         }
 
         async function getAIAnalysis(userText, symbol, interval, isGeneral) {
-            const aiReactor = document.getElementById('ai-core-container'); // Fixed selector
+            const aiReactor = document.getElementById('ai-core-container');
             aiReactor.querySelector('.arc-reactor').classList.add('thinking');
             const loadingId = addMessage("PROCESSING...", 'system');
             let liveDataString = "";
