@@ -11,16 +11,16 @@
     <meta name="theme-color" content="#000000">
     <link rel="apple-touch-icon" href="https://img.icons8.com/nolan/512/iron-man.png">
 
-    <title>TRADING SPIRE JARVIS v9.4 (INPUT FIX)</title>
+    <title>TRADING SPIRE JARVIS v9.5</title>
     <style>
         /* --- RESET --- */
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         
-        /* STRICT VIEWPORT LOCK */
+        /* LAYOUT LOCK */
         html {
             height: 100%;
-            overflow: hidden; /* No scroll on root */
-            overscroll-behavior: none; /* No bounce */
+            overflow: hidden; 
+            overscroll-behavior: none; 
         }
 
         body {
@@ -29,19 +29,17 @@
             font-family: 'Courier New', Courier, monospace;
             width: 100%; 
             height: 100%; 
-            position: fixed; /* Pins app to screen */
+            position: fixed; 
             overflow: hidden;
+            /* Removed touch-action: none to restore keyboard/input interactions */
             user-select: none; -webkit-user-select: none;
-            touch-action: none; /* Keeps app stable, BUT requires overrides below */
         }
 
-        /* --- CRITICAL INPUT FIX --- */
-        /* This allows tapping inputs even when the body is locked */
+        /* Explicitly allow interaction with inputs */
         input, textarea, button {
-            pointer-events: auto !important;
-            user-select: text !important;
-            -webkit-user-select: text !important;
-            touch-action: manipulation !important; /* Allows tap/focus */
+            user-select: text;
+            -webkit-user-select: text;
+            pointer-events: auto;
         }
 
         /* --- MAIN APP CONTAINER --- */
@@ -49,7 +47,7 @@
             width: 100%;
             height: 100%; 
             display: flex;
-            flex-direction: row; /* Desktop default */
+            flex-direction: row; 
             overflow: hidden;
         }
 
@@ -68,7 +66,6 @@
             display: flex; justify-content: center; align-items: center;
             border-left: 1px solid #004444; border-right: 1px solid #004444;
             z-index: 50;
-            touch-action: none;
         }
 
         /* --- INTERFACE SECTION --- */
@@ -90,7 +87,7 @@
 
             #chart-section { 
                 width: 100%; 
-                flex-basis: 50%; /* 50/50 Split */
+                flex-basis: 50%; 
                 flex-shrink: 0;
             }
             
@@ -102,7 +99,7 @@
 
             #interface-section {
                 width: 100%; 
-                flex-grow: 1; /* Fills remaining space */
+                flex-grow: 1; 
                 overflow: hidden; 
                 padding-bottom: 0;
             }
@@ -121,25 +118,23 @@
 
         #chat-window {
             flex: 1; 
-            overflow-y: auto; /* Internal Scroll */
-            -webkit-overflow-scrolling: touch; /* Smooth iOS scroll */
+            overflow-y: auto; 
+            -webkit-overflow-scrolling: touch; 
             background: rgba(0, 15, 20, 0.95);
             border: 1px solid #003333;
             padding: 10px;
             font-size: 13px;
-            overscroll-behavior: contain; /* Prevents scroll chaining to body */
-            touch-action: pan-y; /* Allow vertical scroll */
+            overscroll-behavior: contain; 
         }
 
         #input-form {
             height: 50px; display: flex; gap: 5px; margin-top: 5px; flex-shrink: 0;
-            /* Padding handled by JS viewport logic usually, but fallback here */
             padding-bottom: env(safe-area-inset-bottom, 5px);
         }
         input { 
             flex: 1; background: #000; border: 1px solid #0ff; color: #fff; 
             padding: 10px; border-radius: 0; -webkit-appearance: none; 
-            font-size: 16px; /* CRITICAL: 16px prevents iOS zoom on focus */
+            font-size: 16px; /* Prevents zoom */
         }
         button { background: #004444; color: #0ff; border: 1px solid #0ff; padding: 0 20px; font-weight: bold; border-radius: 0; }
 
@@ -156,7 +151,7 @@
         /* API MODAL */
         #api-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 999; display: flex; flex-direction: column; justify-content: center; align-items: center; }
         #api-modal.hidden { display: none; }
-        #api-key-input { width: 80%; margin-bottom: 10px; background: #111; color: #fff; border: 1px solid #0ff; padding: 15px; }
+        #api-key-input { width: 80%; margin-bottom: 10px; background: #111; color: #fff; border: 1px solid #0ff; padding: 15px; font-family: monospace; }
         #save-key-btn { padding: 15px 30px; background: #0ff; font-weight: bold; }
         #reset-btn { position: absolute; bottom: 10px; right: 10px; color: #555; background: none; border: none; font-size: 10px; }
     </style>
@@ -181,7 +176,7 @@
         
         <div id="interface-section">
             <div id="ai-core-container"><div class="arc-reactor" id="ai-reactor"><div class="arc-inner"></div></div></div>
-            <div id="chat-window"><div class="msg ai">SYSTEM OPTIMIZED.<br>VIEWPORT ENGINE: ACTIVE.</div></div>
+            <div id="chat-window"><div class="msg ai">SYSTEM OPTIMIZED.<br>TOUCH RESTORED.</div></div>
             
             <!-- FORM WRAPPER -->
             <form id="input-form" onsubmit="handleFormSubmit(event)">
@@ -200,24 +195,39 @@
         let currentSymbol = "BINANCE:BTCUSDT", currentInterval = "D", activeStudies = []; 
         const chatWindow = document.getElementById('chat-window');
         
-        // --- VIEWPORT ENGINE (THE FIX) ---
-        // This forces the app to fit the Visual Viewport (which shrinks when keyboard opens)
+        // --- SMART BACKGROUND LOCK (Allows Inputs, Blocks Background Drag) ---
+        document.body.addEventListener('touchmove', function(e) {
+            // Check if we are touching an allowed element
+            const isInput = e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA';
+            const isButton = e.target.tagName === 'BUTTON';
+            const isChat = e.target.closest('#chat-window');
+            const isResizer = e.target.closest('#resizer');
+
+            if (isInput || isButton || isResizer) {
+                return; // Allow interaction
+            }
+
+            if (isChat) {
+                // Allow scroll only if content overflows
+                const el = document.getElementById('chat-window');
+                if (el.scrollHeight > el.clientHeight) {
+                    e.stopPropagation(); // Let it scroll inside
+                    return;
+                }
+            }
+
+            // Otherwise, block the drag to prevent full page refresh
+            if (e.cancelable) e.preventDefault();
+        }, { passive: false });
+
+        // --- VIEWPORT RESIZER ---
         if (window.visualViewport) {
             window.visualViewport.addEventListener('resize', () => {
-                const appContainer = document.getElementById('app-container');
-                // Set app height to the actual visible height
-                appContainer.style.height = `${window.visualViewport.height}px`;
-                // Scroll to top to prevent body from being pushed up
+                document.getElementById('app-container').style.height = window.visualViewport.height + 'px';
                 window.scrollTo(0, 0);
-                // Ensure the chat is scrolled to bottom
                 chatWindow.scrollTop = chatWindow.scrollHeight;
             });
         }
-
-        // Fallback for resizing (on rotation or non-visual-viewport browsers)
-        window.addEventListener('resize', () => {
-             document.getElementById('app-container').style.height = `${window.innerHeight}px`;
-        });
 
         // --- RESIZING LOGIC ---
         const resizer = document.getElementById('resizer');
